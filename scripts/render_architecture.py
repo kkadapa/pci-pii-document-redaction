@@ -150,7 +150,7 @@ card(1, R1, R1H, 2, "Intake Function", BLUE, [
     ("limit", "≤ 500 MB: read from file metadata"),
     ("limit", "≤ 2,000 pages: counted inside file"),
     ("note", "PDF page list, TIFF frames, image = 1"),
-    ("measured", "500-page PDF counted in 26 ms"),
+    ("measured", "Count: 500 pp ~25 ms, 2,000 pp ~60 ms"),
 ], in_repo=True)
 card(2, R1, R1H, 3, "Blob Storage (raw)", BLUE, [
     ("sub", "Quarantine container"),

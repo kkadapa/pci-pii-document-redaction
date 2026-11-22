@@ -39,7 +39,7 @@ sequenceDiagram
 
     U->>A: POST /jobs (file)
     A->>I: Authenticated request
-    I->>I: Size ≤ 500 MB (metadata), pages ≤ 2,000 (counted in file: 26 ms for 500 pages)
+    I->>I: Size ≤ 500 MB (metadata), pages ≤ 2,000 (counted in file: about 25 ms for 500 pages)
     I->>B: Store raw file (malware scan on upload)
     I->>Q: Enqueue job
     A-->>U: 202 Accepted + job ID
@@ -65,7 +65,7 @@ sequenceDiagram
 | Step | Component | What it does | Limits and numbers |
 |------|-----------|--------------|--------------------|
 | 1 | **API Management** | Single entry point. Authenticates the caller with Microsoft Entra ID, applies WAF rules, and returns `202 Accepted` with a job ID as soon as the file is accepted | No document processing happens here, so the response is fast regardless of file size |
-| 2 | **Intake Function** | Rejects files that would fail later: wrong type, too large, too many pages. See [How the size and page checks work](#how-the-size-and-page-checks-work) | Max 500 MB and 2,000 pages per document. Both are hard limits for Document Intelligence S0 and can't be raised. **Measured:** counting pages took 26 ms for the 500-page PDF and 64 ms for a 2,000-page PDF |
+| 2 | **Intake Function** | Rejects files that would fail later: wrong type, too large, too many pages. See [How the size and page checks work](#how-the-size-and-page-checks-work) | Max 500 MB and 2,000 pages per document. Both are hard limits for Document Intelligence S0 and can't be raised. **Measured (three runs):** counting pages took 24 to 26 ms for the 500-page PDF and 57 to 64 ms for a 2,000-page PDF. A 2,001-page PDF is rejected with no Azure call |
 | 3 | **Blob Storage (raw)** | Holds the original file in a quarantine container | Private endpoint only, encrypted at rest. The file is deleted in step 12, and a lifecycle rule removes anything left behind |
 | 4 | **Defender for Storage** | Scans the upload for malware | An infected file rejects the job before any processing |
 | 5 | **Service Bus queue** | One message per job | Separates upload from processing, so a slow 500-page job never blocks an upload request. Gives retries and a dead-letter queue |
@@ -125,7 +125,7 @@ Every component above handles card data or its derivatives, so all of them are i
 
 | Stage | Time | Share |
 |-------|------|-------|
-| Size and page check (2) | 26 ms | under 0.1% |
+| Size and page check (2) | 24 to 26 ms | under 0.1% |
 | Upload, storage, malware scan, queue (1, 3 to 5) | Not measured. Expect seconds, dominated by upload bandwidth | |
 | Document Intelligence (6) | 28.8 s | 71% |
 | Chunking (7) | Not timed separately. It's string slicing in memory and is negligible next to the network calls | |

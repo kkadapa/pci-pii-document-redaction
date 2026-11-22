@@ -97,6 +97,7 @@ The `azure-ai-textanalytics` SDK (5.4.0, the latest release) supports Language A
 | `scripts/generate_banking_pdf.py` | Generates a synthetic 500-page bank statement PDF and a ground-truth file listing every planted value |
 | `scripts/score_results.py` | Scores pipeline output against the ground truth |
 | `scripts/benchmark.py` | Times each stage, and compares 1 worker with N parallel workers for Language calls |
+| `scripts/test_precheck.py` | Tests the size and page-count pre-check offline, including PDFs and TIFFs at and over the 2,000-page limit |
 | `scripts/probe_pii_categories.py` | Calls the Language REST API to compare what each API version detects |
 | `scripts/render_architecture.py` | Generates `docs/architecture.svg` |
 | `docs/architecture.md` | Target-state architecture and end-to-end flow |
@@ -139,6 +140,7 @@ The `azure-ai-textanalytics` SDK (5.4.0, the latest release) supports Language A
    python languageservice.py test_data/banking_statements_500p.pdf > test_data/results.json
    python scripts/score_results.py test_data/results.json
    python scripts/benchmark.py test_data/banking_statements_500p.pdf
+   python scripts/test_precheck.py
    ```
 
 ### Example output (`sample_pci_test.pdf`, entities shortened)
@@ -280,7 +282,7 @@ Measured with `scripts/benchmark.py`:
 |-------|--------------------|-----------------------------|
 | Characters extracted | 430 | 528,527 |
 | Chunks / Language requests | 1 / 1 | 109 / 22 |
-| Size and page pre-check | 37 ms | 26 ms |
+| Size and page pre-check | 37 ms | 24 to 26 ms |
 | Document Intelligence | 2.5 s | 28.8 s (58 ms per page) |
 | Language PII, 5 parallel requests | 0.3 s | 11.9 s |
 | Rules, masking, validation | under 0.01 s | 0.1 s |
@@ -291,10 +293,32 @@ Measured with `scripts/benchmark.py`:
 | Document Intelligence is stable | 28.3 s to 28.8 s across three runs of the 500-page file |
 | Parallel Language calls matter | The same 22 requests took 47.4 s one at a time and 11.9 s with 5 in parallel, about 4x faster |
 | Rules and validation are cheap | About 0.1 s for 500 pages |
-| The page pre-check is cheap | 26 ms for the 500-page PDF and 64 ms for a 2,000-page PDF. The 1-page figure is higher because it includes loading the PDF library |
+| The page pre-check is cheap | 24 to 26 ms for the 500-page PDF and 57 to 64 ms for a 2,000-page PDF, across three runs. See [Size and page pre-check](#size-and-page-pre-check). The 1-page figure is higher because that pipeline run includes loading the PDF library |
 | Command-line run agrees | `python languageservice.py` on the 500-page file took 40.2 s |
 
 These numbers are for a text PDF. Scanned PDFs need full OCR and are usually much larger files, so expect them to be slower. They were not measured here. Test with your own scanned samples before you size anything.
+
+### Size and page pre-check
+
+Tested with `scripts/test_precheck.py`, which runs offline and makes no Azure calls. It checks the two real test documents, and generates edge cases right at and just over the limits: blank-page PDFs and multi-frame TIFFs at 2,000 and 2,001 pages, plus files the pre-check can't count.
+
+| File | Size | Type detected | Pages counted | Expected | Result | Check time |
+|------|------|---------------|---------------|----------|--------|------------|
+| 1-page form (`sample_pci_test.pdf`) | 2 KB | PDF | 1 | Pass | Pass | 5 ms |
+| 500-page bank statement | 861 KB | PDF | 500 | Pass | Pass | 24 ms |
+| PDF, 2,000 blank pages (at the limit) | 244 KB | PDF | 2,000 | Pass | Pass | 57 ms |
+| PDF, 2,001 blank pages (over the limit) | 244 KB | PDF | 2,001 | Reject | Reject | 57 ms |
+| TIFF, 3 frames | under 1 KB | TIFF | 3 | Pass | Pass | 1 ms |
+| TIFF, 2,001 frames (over the limit) | 250 KB | TIFF | 2,001 | Reject | Reject | 86 ms |
+| PNG image | under 1 KB | PNG | 1 | Pass | Pass | 1 ms |
+| Damaged PDF | under 1 KB | PDF | Can't be read | Pass to Document Intelligence | Pass | 1 ms |
+| Text file | under 1 KB | Other | Not counted | Pass to Document Intelligence | Pass | under 1 ms |
+
+All 9 cases behaved as expected, and timings were consistent across repeated runs.
+
+- **Rejections happen before any service call.** Running `python languageservice.py` on the 2,001-page PDF returns `{"status": "error", "error": "File has 2,001 pages; the limit is 2,000 pages"}` with exit code 1, without calling Azure.
+- **Cost grows with page count, not file size.** Counting 2,000 pages took about 60 ms. Even at the 2,000-page limit, the pre-check costs well under a second.
+- **What was not tested.** The 2,000-page PDF was only pre-checked. It was not sent through Document Intelligence and Language, so there is no end-to-end timing at 2,000 pages. Scaling from the 500-page result (58 ms per page) suggests about 2 minutes for Document Intelligence alone, but that is an extrapolation, not a measurement.
 
 ### API version comparison
 
@@ -378,7 +402,7 @@ Do not rely on a single detector for card data. Layer the controls in this table
 
 General rules:
 
-- **Validate before upload.** Check file type, file size, and page count. A rejected upload costs nothing, while a failed analysis wastes time and quota. Size comes from file metadata. Pages have to be counted inside the file, which took 26 ms for 500 PDF pages. See [How the size and page checks work](docs/architecture.md#how-the-size-and-page-checks-work).
+- **Validate before upload.** Check file type, file size, and page count. A rejected upload costs nothing, while a failed analysis wastes time and quota. Size comes from file metadata. Pages have to be counted inside the file, which took about 25 ms for 500 PDF pages and about 60 ms for 2,000. See [How the size and page checks work](docs/architecture.md#how-the-size-and-page-checks-work).
 - **Choose chunk boundaries carefully.** Split Language input at line or paragraph boundaries and overlap chunks, as this pipeline does. Keep the rule layer as a second line of defense.
 - **Use the async Language API for bulk jobs if you need fewer requests.** It accepts 25 documents per request, but caps the total at 125,000 characters, which is 25 chunks of 5,000 characters. It rejects the whole request if any document is too large, so validate chunk sizes first.
 - **Request only the categories you need.** Each extra general category adds entities to review without protecting more card data.
