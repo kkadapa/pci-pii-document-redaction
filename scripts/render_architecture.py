@@ -252,12 +252,11 @@ bars = [
     ("Document Intelligence", 28.8, TEAL),
     ("Language PII, 5 parallel", 11.9, TEAL),
     ("Rules + mask + validate", 0.1, PURPLE),
-    ("End to end, current", 40.8, GREEN),
-    ("End to end, first version", 60.7, NOTE),
+    ("End to end", 40.8, GREEN),
 ]
-scale = 300 / 60.7
+scale = 320 / 40.8
 for i, (label, secs, color) in enumerate(bars):
-    by = py + 40 + i * 19
+    by = py + 44 + i * 22
     text(px + 16, by + 10, label, size=11.5, color=INK)
     add(f'<rect x="{px + 175}" y="{by}" width="{max(secs * scale, 2):.1f}" height="12" rx="2" fill="{color}"/>')
     text(px + 175 + max(secs * scale, 2) + 6, by + 10.5, f"{secs} s", size=11.5, color=INK, weight="600")
