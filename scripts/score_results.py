@@ -42,4 +42,4 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python scripts/score_results.py <output json> [ground truth json]", file=sys.stderr)
         sys.exit(2)
-    score(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else "test_data/ground_truth.json")
+    score(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else "test_data/ground_truth_500p.json")

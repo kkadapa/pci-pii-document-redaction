@@ -36,8 +36,10 @@ def tiff(path, frames):
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         cases = [("sample_pci_test.pdf", "1-page form", "pass")]
-        if os.path.exists("test_data/banking_statements_500p.pdf"):
-            cases.append(("test_data/banking_statements_500p.pdf", "500-page bank statement", "pass"))
+        for pages in (500, 2000):
+            path = f"test_data/banking_statements_{pages}p.pdf"
+            if os.path.exists(path):
+                cases.append((path, f"{pages:,}-page bank statement", "pass"))
 
         generated = [
             ("p2000.pdf", "PDF, 2,000 blank pages", "pass", lambda p: blank_pdf(p, 2000)),

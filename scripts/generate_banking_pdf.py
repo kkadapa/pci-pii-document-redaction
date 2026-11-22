@@ -1,25 +1,29 @@
 """
-Generates a synthetic 500-page banking statement PDF for load and accuracy testing,
-plus a ground-truth manifest listing every planted PII/PCI value and its page.
+Generates a synthetic banking statement PDF (500 pages by default) for load and accuracy
+testing, plus a ground-truth manifest listing every planted PII/PCI value and its page.
+A cardholder block is planted on every 20th page.
 
 All names, accounts, and card numbers are fake. Card numbers are public test numbers.
 
 Usage (from the project root):
-  python scripts/generate_banking_pdf.py [output_dir]   # default: test_data/
+  python scripts/generate_banking_pdf.py                 # 500 pages, into test_data/
+  python scripts/generate_banking_pdf.py --pages 2000    # 2,000 pages
+  python scripts/generate_banking_pdf.py --pages 2000 --out some_dir
+
+Output: banking_statements_<N>p.pdf and ground_truth_<N>p.json
 """
 
 import json
 import os
 import random
-import sys
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-TOTAL_PAGES = 500
-PLANT_EVERY = 20  # pages 20, 40, ..., 500 get a card block
+TOTAL_PAGES = 500  # overridden by --pages
+PLANT_EVERY = 20  # pages 20, 40, 60, ... get a card block
 SEED = 42
 
 # Public test card numbers (valid format, not real accounts)
@@ -73,8 +77,8 @@ def build_pdf(output_dir):
     plan, manifest = build_plan(rng)
 
     os.makedirs(output_dir, exist_ok=True)
-    pdf_path = os.path.join(output_dir, "banking_statements_500p.pdf")
-    manifest_path = os.path.join(output_dir, "ground_truth.json")
+    pdf_path = os.path.join(output_dir, f"banking_statements_{TOTAL_PAGES}p.pdf")
+    manifest_path = os.path.join(output_dir, f"ground_truth_{TOTAL_PAGES}p.json")
 
     styles = getSampleStyleSheet()
     title = styles["Heading2"]
@@ -142,7 +146,13 @@ def build_pdf(output_dir):
 
 
 if __name__ == "__main__":
+    import argparse
     default_out = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "test_data")
-    out = sys.argv[1] if len(sys.argv) > 1 else default_out
+    parser = argparse.ArgumentParser(description="Generate a synthetic bank statement PDF")
+    parser.add_argument("--pages", type=int, default=500, help="number of pages (default 500)")
+    parser.add_argument("--out", default=default_out, help="output folder (default test_data/)")
+    args = parser.parse_args()
+    TOTAL_PAGES = args.pages
+    out = args.out
     pdf, man, n = build_pdf(out)
     print(f"PDF: {pdf}\nManifest: {man}\nPlanted blocks: {n}")

@@ -61,7 +61,7 @@
 <rect x="614" y="244.5" width="8" height="8" rx="4" fill="#8C959F"/>
 <text x="628" y="253" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">PDF page list, TIFF frames, image = 1</text>
 <rect x="614" y="262.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
-<text x="628" y="271" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">Count: 500 pp ~25 ms, 2,000 pp ~60 ms</text>
+<text x="628" y="271" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">Count: 500 pp 25 ms, 2,000 pp 99 ms</text>
 <g filter="url(#shadow)"><rect x="900" y="140" width="270" height="170" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
 <path d="M900,148 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#0F6CBD"/>
 <circle cx="920" cy="159" r="11" fill="#FFFFFF"/>
