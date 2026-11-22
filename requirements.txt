@@ -1,0 +1,7 @@
+# Pipeline
+azure-ai-documentintelligence==1.0.2
+azure-core==1.41.0
+python-dotenv==1.2.4
+requests==2.34.2
+# scripts/generate_banking_pdf.py
+reportlab==5.1.0
