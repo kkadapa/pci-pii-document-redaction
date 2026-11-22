@@ -9,7 +9,7 @@ A deterministic rule layer then catches card numbers, CVVs, and expiry dates the
 
 The response contains only masked text and entity metadata (category, position, length, confidence). The original sensitive values are never returned or logged.
 
-> **Status: prototype.** On a 500-page synthetic bank statement, every planted card number, CVV, expiry date, email, phone number, and name was masked, and processing took 40.8 seconds end to end. CVV and expiry detection rely on Language API *preview* features. Read [Known gaps](#known-gaps) and [Enterprise approach](#enterprise-approach-for-financial-institutions) before using this with real card data.
+> **Status: prototype.** On synthetic 500- and 2,000-page bank statements, every planted card number, CVV, expiry date, email, phone number, and name was masked (125 cardholder blocks in total). The 2,000-page statement, the Document Intelligence maximum, took about 2.5 minutes end to end. CVV and expiry detection rely on Language API *preview* features. Read [Known gaps](#known-gaps) and [Enterprise approach](#enterprise-approach-for-financial-institutions) before using this with real card data.
 
 ## Contents
 
@@ -27,7 +27,7 @@ The response contains only masked text and entity metadata (category, position, 
 
 ![Target-state architecture diagram](docs/architecture.svg)
 
-[docs/architecture.md](docs/architecture.md) walks through all 13 steps, with a sequence diagram, a time budget for a 500-page document, and what happens when each step fails. The size and page checks from step 2, and steps 6 to 10, are implemented in `languageservice.py`. The other steps are the production design.
+[docs/architecture.md](docs/architecture.md) walks through all 13 steps, with a sequence diagram, time budgets for 500- and 2,000-page documents, and what happens when each step fails. The size and page checks from step 2, and steps 6 to 10, are implemented in `languageservice.py`. The other steps are the production design.
 
 ## How the pipeline works
 
@@ -41,14 +41,14 @@ PDF / image upload
      (PDF page list, TIFF frames, single images = 1)
         |
         v
-1. Azure AI Document Intelligence (prebuilt-read)                  resource: idpgtadoc
+1. Azure AI Document Intelligence (prebuilt-read)                  resource: gtadoc
         |  extracted text
         v
 2. Split into chunks of up to 5,000 characters, ending at line breaks,
    with 100 characters of overlap between chunks
         |
         v
-3. Azure AI Language PII detection, REST API 2026-05-15-preview      resource: gta6langservice
+3. Azure AI Language PII detection, REST API 2026-05-15-preview      resource: gtalangservice
    - explicit category list, including CVV and ExpirationDate
    - 5 chunks per request, 5 requests in parallel
    - retries on HTTP 429 and 5xx (up to 5 attempts), honoring Retry-After
@@ -94,7 +94,7 @@ The `azure-ai-textanalytics` SDK (5.4.0, the latest release) supports Language A
 | File | Purpose |
 |------|---------|
 | `languageservice.py` | The pipeline. Run it on a file, or import `process_document(path)` |
-| `scripts/generate_banking_pdf.py` | Generates a synthetic 500-page bank statement PDF and a ground-truth file listing every planted value |
+| `scripts/generate_banking_pdf.py` | Generates a synthetic bank statement PDF (500 pages by default, any size with `--pages`) and a ground-truth file listing every planted value |
 | `scripts/score_results.py` | Scores pipeline output against the ground truth |
 | `scripts/benchmark.py` | Times each stage, and compares 1 worker with N parallel workers for Language calls |
 | `scripts/test_precheck.py` | Tests the size and page-count pre-check offline, including PDFs and TIFFs at and over the 2,000-page limit |
@@ -111,9 +111,9 @@ The `azure-ai-textanalytics` SDK (5.4.0, the latest release) supports Language A
 1. Create `.env` in the project root:
 
    ```
-   AZURE_DOCINTEL_ENDPOINT=https://idpgtadoc.cognitiveservices.azure.com/
+   AZURE_DOCINTEL_ENDPOINT=https://gtadoc.cognitiveservices.azure.com/
    AZURE_DOCINTEL_KEY=<Document Intelligence key>
-   AZURE_LANGUAGE_ENDPOINT=https://gta6langservice.cognitiveservices.azure.com/
+   AZURE_LANGUAGE_ENDPOINT=https://gtalangservice.cognitiveservices.azure.com/
    AZURE_LANGUAGE_KEY=<Language key>
    ```
 
@@ -138,6 +138,8 @@ The `azure-ai-textanalytics` SDK (5.4.0, the latest release) supports Language A
    ```
    python languageservice.py test_data/banking_statements_500p.pdf > test_data/results_500p.json
    python scripts/score_results.py test_data/results_500p.json test_data/ground_truth_500p.json
+   python languageservice.py test_data/banking_statements_2000p.pdf > test_data/results_2000p.json
+   python scripts/score_results.py test_data/results_2000p.json test_data/ground_truth_2000p.json
    python scripts/benchmark.py test_data/banking_statements_500p.pdf
    python scripts/test_precheck.py
    ```
@@ -161,7 +163,7 @@ The `azure-ai-textanalytics` SDK (5.4.0, the latest release) supports Language A
   "characters": 430,
   "language_api_version": "2026-05-15-preview",
   "language_model_versions": ["2026-05-01"],
-  "timings": {"precheck_s": 0.037, "document_intelligence_s": 3.7, "language_s": 0.4},
+  "timings": {"precheck_s": 0.037, "document_intelligence_s": 2.5, "language_s": 0.3},
   "pii_detected": true,
   "category_counts": {"Address": 1, "CVV": 2, "CreditCardNumber": 2, "DateTime": 2, "Email": 1, "Person": 2, "PhoneNumber": 1},
   "rule_only_detections": 0,
@@ -235,7 +237,7 @@ Source: [PII entity categories](https://learn.microsoft.com/en-us/azure/ai-servi
 
 ## Test results
 
-All tests ran on November 22, 2026, against the `idpgtadoc` (East US) and `gta6langservice` resources, from a single laptop. Each figure comes from a single run, so expect variation between runs and regions.
+All tests ran on November 22, 2026, against the `gtadoc` (Document Intelligence) and `gtalangservice` (Language) resources, from a single laptop. Where a measurement was repeated, the range across runs is shown. Otherwise the figure comes from one run, so expect variation between runs and regions.
 
 ### Test documents
 
@@ -250,62 +252,66 @@ Both statements are committed in `test_data/` and were generated by `scripts/gen
 | Cardholder blocks | 25, one every 20th page | 100, one every 20th page |
 | Fields per block | Name, email, phone, SSN, card type, card number, expiry, CVV | Same |
 | Ground truth | `ground_truth_500p.json` | `ground_truth_2000p.json` |
-| Pipeline output | `results_500p.json` | Not yet run (see [Size and page pre-check](#size-and-page-pre-check)) |
-| Extracted text | 528,527 characters (about 1,057 per page) | Not yet measured |
+| Pipeline output | `results_500p.json` | `results_2000p.json` |
+| Extracted text | 528,527 characters (about 1,057 per page) | 2,116,719 characters (about 1,058 per page) |
 
 ### Detection accuracy
 
 Scored with `scripts/score_results.py`. For each label, the scorer reads the value after the label in the masked output and counts a leak if it matches a planted value exactly.
 
-| Planted value | Leaked | Detected by |
-|---------------|--------|-------------|
-| Card number | 0 / 25 | Language (`CreditCardNumber`) |
-| CVV | 0 / 25 | Language (`CVV`) |
-| Expiry date | 0 / 25 | Language (`DateTime`) |
-| Email | 0 / 25 | Language (`Email`) |
-| Phone | 0 / 25 | Language (`PhoneNumber`) |
-| Cardholder name | 0 / 25 | Language (`Person`) |
-| SSN | 25 / 25 | Not detected. Test-data artifact, see below |
+| Planted value | Leaked, 500 pages | Leaked, 2,000 pages | Detected by |
+|---------------|-------------------|---------------------|-------------|
+| Card number | 0 / 25 | 0 / 100 | Language (`CreditCardNumber`) |
+| CVV | 0 / 25 | 0 / 100 | Language (`CVV`) |
+| Expiry date | 0 / 25 | 0 / 100 | Language (`DateTime`) |
+| Email | 0 / 25 | 0 / 100 | Language (`Email`) |
+| Phone | 0 / 25 | 0 / 100 | Language (`PhoneNumber`) |
+| Cardholder name | 0 / 25 | 0 / 100 | Language (`Person`) |
+| SSN | 25 / 25 | 100 / 100 | Not detected. Test-data artifact, see below |
 
 - **SSN result.** The generator uses SSNs with a `000` area number, which is never issued, so the detector correctly ignores them. `scripts/probe_pii_categories.py` confirmed that a valid-format test SSN (`123-45-6789`) is detected and masked. To test SSN detection on your own data, use valid-format synthetic values.
-- **Rule layer.** The Language service caught every card number, CVV, and expiry date on its own, so the rule layer added nothing on this document (`rule_only_detections: 0`). It is there as a backstop for layouts the service handles less well.
+- **Rule layer.** The Language service caught every card number, CVV, and expiry date on its own, so the rule layer added nothing on either document (`rule_only_detections: 0`). It is there as a backstop for layouts the service handles less well.
 
-All entities returned for the 500-page document:
+All entities returned:
 
-| Category | Count | Notes |
-|----------|-------|-------|
-| `BankAccountNumber` | 500 | The account number in each page header |
-| `PhoneNumber` | 41 | 25 planted; 16 additional numbers also masked |
-| `Person` | 28 | 25 planted names |
-| `CreditCardNumber` | 25 | |
-| `CVV` | 25 | |
-| `DateTime` | 25 | Expiry dates |
-| `Email` | 25 | |
-| **Total** | **669** | |
+| Category | 500 pages | 2,000 pages | Notes |
+|----------|-----------|-------------|-------|
+| `BankAccountNumber` | 500 | 2,000 | The account number in each page header |
+| `PhoneNumber` | 41 | 139 | 25 and 100 planted; other phone-like numbers were also masked |
+| `Person` | 28 | 105 | 25 and 100 planted names |
+| `CreditCardNumber` | 25 | 100 | |
+| `CVV` | 25 | 100 | |
+| `DateTime` | 25 | 104 | Expiry dates, plus 4 other dates at 2,000 pages |
+| `Email` | 25 | 100 | |
+| **Total** | **669** | **2,648** | |
 
 ### Processing time
 
-Measured with `scripts/benchmark.py`:
+Measured with `scripts/benchmark.py` (1 page and 500 pages) and `python languageservice.py` (500 and 2,000 pages):
 
-| Stage | 1-page form (2 KB) | 500-page statement (861 KB) |
-|-------|--------------------|-----------------------------|
-| Characters extracted | 430 | 528,527 |
-| Chunks / Language requests | 1 / 1 | 109 / 22 |
-| Size and page pre-check | 37 ms | 24 to 26 ms |
-| Document Intelligence | 2.5 s | 28.8 s (58 ms per page) |
-| Language PII, 5 parallel requests | 0.3 s | 11.9 s |
-| Rules, masking, validation | under 0.01 s | 0.1 s |
-| **End to end** | **2.8 s** | **40.8 s** |
+| Stage | 1-page form (2 KB) | 500-page statement (861 KB) | 2,000-page statement (3.4 MB) |
+|-------|--------------------|-----------------------------|-------------------------------|
+| Characters extracted | 430 | 528,527 | 2,116,719 |
+| Chunks / Language requests | 1 / 1 | 109 / 22 | about 434 / 87 |
+| Size and page pre-check | 37 ms | 62 ms | 141 ms |
+| Document Intelligence | 2.5 s | 28.9 to 44.7 s (58 to 89 ms per page, 2 runs) | 108.8 s (54 ms per page) |
+| Language PII, 5 parallel requests | 0.3 s | 9.2 to 10.2 s (2 runs) | 36.7 s |
+| Language PII, 1 request at a time | 0.3 s | 40.0 s | Not measured |
+| Rules, masking, validation | under 0.01 s | 0.09 s | Not timed separately |
+| **End to end** | **2.8 s** | **39.2 to 54.0 s (2 runs)** | **146.1 s, about 2.5 minutes (wall clock)** |
 
 | Observation | Detail |
 |-------------|--------|
-| Document Intelligence is stable | 28.3 s to 28.8 s across three runs of the 500-page file |
-| Parallel Language calls matter | The same 22 requests took 47.4 s one at a time and 11.9 s with 5 in parallel, about 4x faster |
-| Rules and validation are cheap | About 0.1 s for 500 pages |
-| The page pre-check is cheap | 24 to 26 ms for the 500-page PDF, and 57 to 99 ms for 2,000-page PDFs depending on file size. See [Size and page pre-check](#size-and-page-pre-check). The 1-page figure is higher because that pipeline run includes loading the PDF library |
-| Command-line run agrees | `python languageservice.py` on the 500-page file took 40.2 s |
+| Document Intelligence dominates | It took 108.8 of the 146.1 seconds at 2,000 pages, about three quarters of the total |
+| Document Intelligence time varies | Two runs of the same 500-page file on the same resource took 28.9 s and 44.7 s. The slower run took about 1.5 times as long, so leave headroom in any time budget |
+| Time scales roughly linearly | 4 times the pages took about 3.8 times the Document Intelligence time (against the faster 500-page run) and 3.6 times the Language time |
+| Parallel Language calls matter | The same 22 requests took 40.0 s one at a time and 10.2 s with 5 in parallel, about 4 times faster |
+| Language stays inside the S0 rate limit | 87 requests in 36.7 s is about 142 requests per minute, under the 300-per-minute S0 limit |
+| Rules and validation are cheap | 0.09 s for 500 pages |
+| The page pre-check is cheap | Inside pipeline runs it took 37 to 141 ms, including loading the PDF library. On its own it takes 24 to 26 ms for 500 pages and 57 to 99 ms for 2,000. See [Size and page pre-check](#size-and-page-pre-check) |
+| Transient connection errors happen | The first 2,000-page attempt failed before uploading, with a dropped TLS connection. The pipeline returned an error, and an immediate retry succeeded. See [Known gaps](#known-gaps) |
 
-These numbers are for a text PDF. Scanned PDFs need full OCR and are usually much larger files, so expect them to be slower. They were not measured here. Test with your own scanned samples before you size anything.
+These numbers are for text PDFs. Scanned PDFs need full OCR and are usually much larger files, so expect them to be slower. They were not measured here. Test with your own scanned samples before you size anything.
 
 ### Size and page pre-check
 
@@ -328,7 +334,7 @@ All 10 cases behaved as expected, and timings were consistent across repeated ru
 
 - **Rejections happen before any service call.** Running `python languageservice.py` on the 2,001-page PDF returns `{"status": "error", "error": "File has 2,001 pages; the limit is 2,000 pages"}` with exit code 1, without calling Azure.
 - **Cost grows with page count and file size.** At 2,000 pages, the blank 244 KB PDF took 57 ms and the 3.4 MB statement took 99 ms. Even at the 2,000-page limit, the pre-check takes about a tenth of a second.
-- **What was not tested.** The 2,000-page statement has not yet been run through Document Intelligence and Language, so there is no end-to-end timing or accuracy result at 2,000 pages. The run was attempted, but both Azure resources stopped accepting the configured credentials before it started. Scaling from the 500-page result (58 ms per page) suggests about 2 minutes for Document Intelligence alone, but that is an extrapolation, not a measurement.
+- **Files at the limit go through end to end.** The 2,000-page statement passed the pre-check and then completed the full pipeline in 146.1 s, with nothing leaked. See [Processing time](#processing-time) and [Detection accuracy](#detection-accuracy).
 
 ### API version comparison
 
@@ -351,6 +357,7 @@ This is why the pipeline uses the preview API with an explicit category list.
 | Large files are processed in one Document Intelligence call | A failure means redoing the whole file | Split files over a few hundred pages into page ranges with the `pages` parameter |
 | Concurrency is limited per process only | Several workers together can exceed Language's 300 requests-per-minute limit on S0 | Use a shared rate limiter in production. Retries on 429 are already in place |
 | Overlapping chunks can report an entity twice if the two chunks detect slightly different spans | Duplicate entries in `entities` | Masking is unaffected. Merge overlapping spans if the list needs to be exact |
+| Transient connection errors fail the job | Seen once in testing: a dropped TLS connection before the 2,000-page upload. The pipeline returned an error rather than partial output, and an immediate retry succeeded | Retry the whole job a limited number of times, for example through Service Bus redelivery, before reporting failure |
 | Synchronous command-line tool | Not suitable for large uploads behind a web request | Use the target-state architecture above |
 | Keys stored in `.env` | Key leakage | Use Microsoft Entra ID (managed identity) or Key Vault in production |
 | Tested only on English text PDFs | Accuracy on scans, handwriting, and other languages is unknown | Build a labeled test set from your own document layouts |
@@ -368,7 +375,7 @@ Any system that receives full card numbers is in PCI DSS scope. That includes th
 The [target-state architecture](#target-state-architecture) separates intake from processing:
 
 - **Intake returns in seconds.** The upload is validated, stored, scanned, and queued, and the caller gets `202 Accepted` with a job ID.
-- **Processing runs in a worker.** A 500-page text PDF takes about 41 seconds, and scanned files take longer. That's too long to hold a web request open.
+- **Processing runs in a worker.** In testing, a 500-page text PDF took 39 to 54 seconds and a 2,000-page one about 2.5 minutes. Scanned files take longer. That's too long to hold a web request open.
 - **Delivery is by job ID.** The caller polls `GET /jobs/{id}`, honoring `Retry-After`, or receives a webhook.
 - **Nothing sensitive is kept.** The original file and extracted text are deleted as soon as the masked result is written, and a storage retention policy removes anything left behind.
 
@@ -395,10 +402,10 @@ Do not rely on a single detector for card data. Layer the controls in this table
 | Service | Limit | Planning guidance |
 |---------|-------|-------------------|
 | Document Intelligence (S0) | 15 analyze requests per second, 50 get-result requests per second, both adjustable | Retry `429` with exponential backoff and honor `Retry-After`. Poll each request at most once every 2 seconds |
-| Language (S0) | 100 requests per second, 300 per minute | At 5 chunks of 5,000 characters per request, 300 requests per minute is 7.5 million characters per minute. At the 1,057 characters per page measured here, that's about 7,000 pages per minute across all workers |
+| Language (S0) | 100 requests per second, 300 per minute | At 5 chunks of 5,000 characters per request, 300 requests per minute is 7.5 million characters per minute. At the 1,057 characters per page measured here, that's about 7,000 pages per minute across all workers. Measured: the 2,000-page run used about 142 requests per minute with 5 parallel requests |
 | Language (S) | 1,000 requests per second, 1,000 per minute | Check your resource's pricing tier before sizing |
 
-- **Parallelism:** 5 parallel Language requests made that stage about 4x faster (47.4 s to 11.9 s). Use a bounded worker pool and a rate limiter shared across workers, so they don't exceed the per-minute limit together.
+- **Parallelism:** 5 parallel Language requests made that stage about 4 times faster (40.0 s to 10.2 s on 500 pages). Use a bounded worker pool and a rate limiter shared across workers, so they don't exceed the per-minute limit together.
 - **Text density varies.** Measure characters per page on your own documents before using the pages-per-minute estimate.
 
 ## File size and page recommendations
@@ -406,8 +413,8 @@ Do not rely on a single detector for card data. Layer the controls in this table
 | Document | Recommendation |
 |----------|----------------|
 | Over 500 MB, or over 2,000 pages | Hard limits that can't be raised. Reject at upload, or split the PDF into parts before submitting |
-| 500 to 2,000 pages | Process as one Document Intelligence call, or split into page ranges with the `pages` parameter so ranges run in parallel and a failure only retries one range. Page-range splitting was not measured here, so benchmark it on your documents |
-| Up to 500 pages, text PDF | One Document Intelligence call is fine. Measured: 28.8 s for Document Intelligence and 40.8 s end to end for 500 pages |
+| 500 to 2,000 pages | One Document Intelligence call works up to the limit. Measured: a 2,000-page text PDF took 108.8 s in a single call and 146.1 s end to end. To go faster, or to limit how much a failure costs, split into page ranges with the `pages` parameter and run them in parallel. Page-range splitting was not measured here, so benchmark it on your documents |
+| Up to 500 pages, text PDF | One Document Intelligence call is fine. Measured: 28.9 to 44.7 s for Document Intelligence and 39 to 54 s end to end for 500 pages |
 | Scanned PDFs and images | Expect larger files and longer OCR times than the text PDF measured here. Benchmark with real scans before sizing the deployment |
 
 General rules:

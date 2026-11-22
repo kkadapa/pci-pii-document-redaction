@@ -2,7 +2,7 @@
 Renders the target-state architecture diagram to docs/architecture.svg.
 
 Limits come from Microsoft documentation (checked November 2026). Timings were measured
-with scripts/benchmark.py on the synthetic 500-page statement. See README for sources.
+with this repo on the synthetic 500- and 2,000-page statements. See README for sources.
 
 Usage (from the project root):
   python scripts/render_architecture.py
@@ -14,7 +14,7 @@ from xml.sax.saxutils import escape
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "architecture.svg")
 
-W, H = 1800, 965
+W, H = 1800, 983
 FONT = "Segoe UI, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif"
 
 # Colors
@@ -101,7 +101,7 @@ add(f'<rect width="{W}" height="{H}" fill="#F6F8FA"/>')
 # Title
 text(30, 46, "Target-state architecture: PCI/PII document redaction on Azure", size=24, weight="bold")
 text(30, 72, "Upload → OCR → PII/PCI detection → masking → JSON response. Limits from Microsoft docs (Nov 2026). "
-     "Timings measured with this repo on a 500-page text PDF.", size=13, color=MUTED)
+     "Timings measured with this repo on 500- and 2,000-page text PDFs.", size=13, color=MUTED)
 
 # Legend
 lx, ly = 1290, 30
@@ -117,7 +117,7 @@ text(lx + 40, ly + 45, "IN REPO", size=9.5, color="#FFFFFF", weight="bold", anch
 text(lx + 74, ly + 45, "Implemented in languageservice.py today; other components are target state", size=11.5, color=INK)
 
 # Client column ---------------------------------------------------------------------------
-cx, cy0, cw, ch = 30, 140, 190, 677
+cx, cy0, cw, ch = 30, 140, 190, 695
 add(f'<g filter="url(#shadow)"><rect x="{cx}" y="{cy0}" width="{cw}" height="{ch}" rx="8" fill="#FFFFFF" stroke="{BORDER}"/></g>')
 add(f'<path d="M{cx},{cy0 + 8} a8,8 0 0 1 8,-8 h{cw - 16} a8,8 0 0 1 8,8 v30 h-{cw} z" fill="{INK}"/>')
 text(cx + cw / 2, cy0 + 24, "Client / user", size=14, color="#FFFFFF", weight="bold", anchor="middle")
@@ -129,8 +129,9 @@ client_steps = [
     (420, "C. Wait: poll with"),
     (436, "    Retry-After, or webhook"),
     (700, "D. Receive masked JSON"),
-    (722, "~41 s for 500 text pages"),
-    (738, "~3 s for 1 page"),
+    (722, "~2.5 min for 2,000 pages"),
+    (738, "39-54 s for 500 pages"),
+    (754, "~3 s for 1 page"),
 ]
 for y, s in client_steps:
     text(cx + 12, y, s, size=12, color=INK if not s.startswith(("~", "    ")) else MUTED,
@@ -187,39 +188,39 @@ card(4, R2, R2H, 6, "Document Intelligence", TEAL, [
     ("limit", "S0: 15 analyze/s, 50 get/s (adjustable)"),
     ("limit", "Poll results ≥ 2 s apart"),
     ("note", "Large files: split with pages range"),
-    ("measured", "500 pages in 28.8 s (58 ms/page)"),
+    ("measured", "2,000 pages in 108.8 s (54 ms/page)"),
 ], in_repo=True)
 card(3, R2, R2H, 7, "Chunker", PURPLE, [
     ("sub", "Split text at line breaks"),
     ("limit", "≤ 5,000 chars per chunk (API max 5,120)"),
     ("note", "100-character overlap between chunks"),
-    ("measured", "528,527 chars → 109 chunks"),
+    ("measured", "2,000 pages: 2.1M chars → 434 chunks"),
 ], in_repo=True)
 card(2, R2, R2H, 8, "Azure AI Language PII", TEAL, [
     ("sub", "API 2026-05-15-preview, explicit categories incl. CVV, ExpirationDate"),
     ("limit", "5 docs per request, 1 MB per request"),
     ("limit", "S0: 100 req/s, 300 req/min"),
     ("note", "5 parallel requests, retry on 429"),
-    ("measured", "22 requests in 11.9 s"),
+    ("measured", "2,000 pages: 87 requests in 36.7 s"),
 ], in_repo=True)
 card(1, R2, R2H, 9, "Rule layer", PURPLE, [
     ("sub", "Deterministic backstop"),
     ("note", "Card numbers: 13-19 digits + Luhn"),
     ("note", "CVV and expiry after their labels"),
-    ("measured", "0 extra hits: Language caught all 25 CVVs and expiry dates"),
+    ("measured", "0 extra hits: Language caught all 125 CVVs and expiry dates"),
 ], in_repo=True)
 card(0, R2, R2H, 10, "Mask + validate", PURPLE, [
     ("sub", "Mask the union of all spans with *"),
     ("note", "Block if a card number or CVV survives"),
     ("note", "Any failed request: no output"),
-    ("measured", "Rules + mask + check: 0.1 s"),
+    ("measured", "500 pp: rules + mask + check 0.09 s"),
 ], in_repo=True)
 arrow([(1635, R1 + R1H), (1635, R2 - 4)])
 for c in range(4, 0, -1):
     arrow([(COLS[c], R2 + R2H / 2), (COLS[c - 1] + CARD_W + 4, R2 + R2H / 2)])
 
 # Row 3: delivery ------------------------------------------------------------------------------
-R3, R3H = 655, 162
+R3, R3H = 655, 180
 section_label(300, R3 - 12, "DELIVERY")
 card(0, R3, R3H, 13, "Results API (via APIM)", BLUE, [
     ("sub", "GET /jobs/{id}"),
@@ -248,24 +249,30 @@ text(258, 718, "JSON", size=10.5, color=MUTED, anchor="middle")
 # Benchmark panel ---------------------------------------------------------------------------
 px, py, pw, ph = 1200, R3, 585, R3H
 add(f'<g filter="url(#shadow)"><rect x="{px}" y="{py}" width="{pw}" height="{ph}" rx="8" fill="#FFFFFF" stroke="{BORDER}"/></g>')
-text(px + 16, py + 24, "Measured: 500-page synthetic bank statement (861 KB text PDF)", size=13, weight="bold")
-bars = [
-    ("Document Intelligence", 28.8, TEAL),
-    ("Language PII, 5 parallel", 11.9, TEAL),
-    ("Rules + mask + validate", 0.1, PURPLE),
-    ("End to end", 40.8, GREEN),
+text(px + 16, py + 24, "Measured: synthetic bank statements (text PDFs)", size=13, weight="bold")
+LIGHT, DARK = "#7FB8AE", TEAL
+for i, (c, label) in enumerate([(LIGHT, "500 pages (861 KB)"), (DARK, "2,000 pages (3.4 MB)")]):
+    lx2 = px + 16 + i * 150
+    add(f'<rect x="{lx2}" y="{py + 34}" width="10" height="10" rx="2" fill="{c}"/>')
+    text(lx2 + 15, py + 43, label, size=11, color=INK)
+rows = [
+    ("Document Intelligence", 28.9, 108.8),
+    ("Language PII, 5 parallel", 10.2, 36.7),
+    ("End to end", 39.2, 146.1),
 ]
-scale = 320 / 40.8
-for i, (label, secs, color) in enumerate(bars):
-    by = py + 44 + i * 22
-    text(px + 16, by + 10, label, size=11.5, color=INK)
-    add(f'<rect x="{px + 175}" y="{by}" width="{max(secs * scale, 2):.1f}" height="12" rx="2" fill="{color}"/>')
-    text(px + 175 + max(secs * scale, 2) + 6, by + 10.5, f"{secs} s", size=11.5, color=INK, weight="600")
-text(px + 16, py + ph - 12, "Single run, East US, Nov 22 2026. Scanned PDFs not measured; expect slower OCR.",
+scale = 330 / 146.1
+for i, (label, small, large) in enumerate(rows):
+    ry = py + 56 + i * 34
+    text(px + 16, ry + 16, label, size=11.5, color=INK, weight="600" if label == "End to end" else "normal")
+    for j, (secs, color) in enumerate([(small, LIGHT), (large, DARK)]):
+        by = ry + j * 14
+        add(f'<rect x="{px + 170}" y="{by}" width="{secs * scale:.1f}" height="11" rx="2" fill="{color}"/>')
+        text(px + 170 + secs * scale + 6, by + 9.5, f"{secs} s", size=11, color=INK, weight="600")
+text(px + 16, py + ph - 12, "Nov 22 2026. 500-page Document Intelligence time ranged 28.9-44.7 s over 2 runs. Scans not measured.",
      size=11, color=MUTED, style="italic")
 
 # Cross-cutting controls ----------------------------------------------------------------------
-by0 = 845
+by0 = 863
 add(f'<rect x="30" y="{by0}" width="1755" height="95" rx="10" fill="#FFFFFF" stroke="{BORDER}"/>')
 text(46, by0 + 26, "CROSS-CUTTING CONTROLS  ·  every component above is in PCI DSS scope", size=11.5, color=MUTED, weight="bold")
 chips = [

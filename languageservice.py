@@ -32,7 +32,7 @@ from concurrent.futures import ThreadPoolExecutor
 import requests
 from dotenv import load_dotenv
 from azure.core.credentials import AzureKeyCredential
-from azure.core.exceptions import HttpResponseError
+from azure.core.exceptions import AzureError, HttpResponseError
 from azure.ai.documentintelligence import DocumentIntelligenceClient
 
 load_dotenv()
@@ -373,5 +373,8 @@ if __name__ == "__main__":
         sys.exit(1)
     except HttpResponseError as exc:  # Document Intelligence errors (auth, size, format)
         print(json.dumps({"status": "error", "error": f"Document Intelligence HTTP {exc.status_code}: {exc.reason}"}, indent=2))
+        sys.exit(1)
+    except AzureError as exc:  # connection failures (DNS, TLS, timeouts) after SDK retries
+        print(json.dumps({"status": "error", "error": f"Document Intelligence request failed: {type(exc).__name__}"}, indent=2))
         sys.exit(1)
     print(json.dumps(output, indent=2))

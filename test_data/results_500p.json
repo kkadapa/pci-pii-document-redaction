@@ -1,6 +1,8 @@
 {
   "status": "ok",
   "source_file": "banking_statements_500p.pdf",
+  "file_type": "pdf",
+  "size_bytes": 881350,
   "pages": 500,
   "characters": 528527,
   "language_api_version": "2026-05-15-preview",
@@ -8,8 +10,9 @@
     "2026-05-01"
   ],
   "timings": {
-    "document_intelligence_s": 28.3,
-    "language_s": 11.6
+    "precheck_s": 0.062,
+    "document_intelligence_s": 44.7,
+    "language_s": 9.2
   },
   "pii_detected": true,
   "category_counts": {
