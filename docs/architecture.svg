@@ -51,14 +51,17 @@
 <circle cx="620" cy="159" r="11" fill="#FFFFFF"/>
 <text x="620" y="163.5" font-size="12" fill="#0F6CBD" font-weight="bold" text-anchor="middle" font-style="normal">2</text>
 <text x="638" y="164" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Intake Function</text>
+<rect x="808" y="150" width="52" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.22" stroke="#FFFFFF" stroke-opacity="0.7"/>
+<text x="834" y="163" font-size="9.5" fill="#FFFFFF" font-weight="bold" text-anchor="middle" font-style="normal">IN REPO</text>
 <text x="614" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Validate before anything is stored</text>
 <rect x="614" y="208.5" width="8" height="8" rx="1.5" fill="#B7791F"/>
-<text x="628" y="217" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">File ≤ 500 MB (hard limit)</text>
+<text x="628" y="217" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">≤ 500 MB: read from file metadata</text>
 <rect x="614" y="226.5" width="8" height="8" rx="1.5" fill="#B7791F"/>
-<text x="628" y="235" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">Pages ≤ 2,000 (hard limit)</text>
+<text x="628" y="235" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">≤ 2,000 pages: counted inside file</text>
 <rect x="614" y="244.5" width="8" height="8" rx="4" fill="#8C959F"/>
-<text x="628" y="253" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">PDF, JPEG, PNG, BMP, TIFF, HEIF,</text>
-<text x="628" y="269" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">DOCX, PPTX, XLS</text>
+<text x="628" y="253" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">PDF page list, TIFF frames, image = 1</text>
+<rect x="614" y="262.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
+<text x="628" y="271" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">500-page PDF counted in 26 ms</text>
 <g filter="url(#shadow)"><rect x="900" y="140" width="270" height="170" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
 <path d="M900,148 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#0F6CBD"/>
 <circle cx="920" cy="159" r="11" fill="#FFFFFF"/>

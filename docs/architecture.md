@@ -1,6 +1,6 @@
 # Target-state architecture: PCI/PII document redaction on Azure
 
-This page explains the end-to-end flow, from a user uploading a document to that user receiving masked JSON. Steps 6 to 10 are implemented in [`languageservice.py`](../languageservice.py) today. The other steps describe the target production design.
+This page explains the end-to-end flow, from a user uploading a document to that user receiving masked JSON. The size and page checks from step 2, and steps 6 to 10, are implemented in [`languageservice.py`](../languageservice.py) today. The other steps describe the target production design.
 
 ![Target-state architecture diagram](architecture.svg)
 
@@ -39,7 +39,7 @@ sequenceDiagram
 
     U->>A: POST /jobs (file)
     A->>I: Authenticated request
-    I->>I: Validate type, size ≤ 500 MB, pages ≤ 2,000
+    I->>I: Size ≤ 500 MB (metadata), pages ≤ 2,000 (counted in file: 26 ms for 500 pages)
     I->>B: Store raw file (malware scan on upload)
     I->>Q: Enqueue job
     A-->>U: 202 Accepted + job ID
@@ -65,10 +65,32 @@ sequenceDiagram
 | Step | Component | What it does | Limits and numbers |
 |------|-----------|--------------|--------------------|
 | 1 | **API Management** | Single entry point. Authenticates the caller with Microsoft Entra ID, applies WAF rules, and returns `202 Accepted` with a job ID as soon as the file is accepted | No document processing happens here, so the response is fast regardless of file size |
-| 2 | **Intake Function** | Rejects files that would fail later: wrong type, too large, too many pages | Max 500 MB and 2,000 pages per document. Both are hard limits for Document Intelligence S0 and can't be raised. Supported types: PDF, JPEG, PNG, BMP, TIFF, HEIF, DOCX, PPTX, XLS |
+| 2 | **Intake Function** | Rejects files that would fail later: wrong type, too large, too many pages. See [How the size and page checks work](#how-the-size-and-page-checks-work) | Max 500 MB and 2,000 pages per document. Both are hard limits for Document Intelligence S0 and can't be raised. **Measured:** counting pages took 26 ms for the 500-page PDF and 64 ms for a 2,000-page PDF |
 | 3 | **Blob Storage (raw)** | Holds the original file in a quarantine container | Private endpoint only, encrypted at rest. The file is deleted in step 12, and a lifecycle rule removes anything left behind |
 | 4 | **Defender for Storage** | Scans the upload for malware | An infected file rejects the job before any processing |
 | 5 | **Service Bus queue** | One message per job | Separates upload from processing, so a slow 500-page job never blocks an upload request. Gives retries and a dead-letter queue |
+
+#### How the size and page checks work
+
+The two limits are checked differently, because only one of them is visible from outside the file:
+
+- **Size (500 MB)** is known without opening the file. Read it from the upload's `Content-Length` header, or from the blob's properties once it's stored.
+- **Pages (2,000)** are not in any header. The Intake Function opens the file and counts them, without rendering anything.
+
+The file type is detected from the file's first bytes, not from its extension, so a renamed file can't skip the check.
+
+| File type | How pages are counted | Implemented in `languageservice.py` |
+|-----------|-----------------------|-------------------------------------|
+| PDF | Length of the PDF's internal page list, read with `pypdf` | Yes |
+| TIFF | Number of image frames, read with Pillow | Yes |
+| JPEG, PNG, BMP, HEIF | Always 1 page | Yes |
+| PPTX | Number of slides in the file. Microsoft counts each slide as one page | No |
+| XLS | Number of worksheets. Microsoft counts each worksheet as one page | No |
+| DOCX | No reliable page count is stored in the file. Microsoft's billing docs count Word documents in blocks of 3,000 characters, so a character count gives an estimate. Not confirmed to be how the 2,000-page limit is applied | No |
+
+When the count can't be determined, the pre-check doesn't reject the file. That covers encrypted or damaged PDFs and the unimplemented types. Document Intelligence still enforces its own limits in step 6, and the pipeline returns its error as `{"status": "error"}`. The pre-check exists to reject oversized files early and cheaply, not to replace the service's own validation.
+
+**Large uploads.** Files near the 500 MB limit are better uploaded directly to Blob Storage with a short-lived, write-only upload URL (a SAS token) than through the API request body. In that variant, the Intake Function runs when the blob arrives, reads the size from the blob's properties, counts pages from the stored file, and deletes the blob if either limit is exceeded.
 
 ### Processing (asynchronous, inside the redaction worker)
 
@@ -103,7 +125,8 @@ Every component above handles card data or its derivatives, so all of them are i
 
 | Stage | Time | Share |
 |-------|------|-------|
-| Intake (steps 1 to 5) | Not measured. Expect seconds, dominated by upload bandwidth | |
+| Size and page check (2) | 26 ms | under 0.1% |
+| Upload, storage, malware scan, queue (1, 3 to 5) | Not measured. Expect seconds, dominated by upload bandwidth | |
 | Document Intelligence (6) | 28.8 s | 71% |
 | Chunking (7) | Not timed separately. It's string slicing in memory and is negligible next to the network calls | |
 | Language PII, 5 parallel (8) | 11.9 s | 29% |
@@ -116,7 +139,8 @@ Document Intelligence dominates once Language calls run in parallel. To go faste
 
 | Failure | Where | Outcome |
 |---------|-------|---------|
-| File over 500 MB or 2,000 pages, or an unsupported type | Step 2 | Rejected at upload with a clear error. Nothing is stored |
+| File over 500 MB or 2,000 pages, or an unsupported type | Step 2 | Rejected at upload with a clear error, for example `File has 2,001 pages; the limit is 2,000 pages`. Nothing is stored and no Azure AI service is called |
+| Page count can't be read (encrypted or damaged PDF, or a type the pre-check doesn't count) | Step 2, then step 6 | The pre-check lets the file through, and Document Intelligence enforces the limit. Its error is returned as `{"status": "error"}` |
 | Malware detected | Step 4 | Job rejected, file quarantined |
 | Document Intelligence error | Step 6 | Job fails. Service Bus retries, then moves the message to the dead-letter queue |
 | Language returns `429` or `5xx` | Step 8 | Retried with backoff, honoring `Retry-After`. Fails the job after 5 attempts |

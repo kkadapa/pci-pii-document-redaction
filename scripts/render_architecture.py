@@ -147,10 +147,11 @@ card(0, R1, R1H, 1, "API Management", BLUE, [
 ])
 card(1, R1, R1H, 2, "Intake Function", BLUE, [
     ("sub", "Validate before anything is stored"),
-    ("limit", "File ≤ 500 MB (hard limit)"),
-    ("limit", "Pages ≤ 2,000 (hard limit)"),
-    ("note", "PDF, JPEG, PNG, BMP, TIFF, HEIF, DOCX, PPTX, XLS"),
-])
+    ("limit", "≤ 500 MB: read from file metadata"),
+    ("limit", "≤ 2,000 pages: counted inside file"),
+    ("note", "PDF page list, TIFF frames, image = 1"),
+    ("measured", "500-page PDF counted in 26 ms"),
+], in_repo=True)
 card(2, R1, R1H, 3, "Blob Storage (raw)", BLUE, [
     ("sub", "Quarantine container"),
     ("note", "Private endpoint, encrypted at rest"),

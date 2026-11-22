@@ -27,13 +27,19 @@ The response contains only masked text and entity metadata (category, position, 
 
 ![Target-state architecture diagram](docs/architecture.svg)
 
-[docs/architecture.md](docs/architecture.md) walks through all 13 steps, with a sequence diagram, a time budget for a 500-page document, and what happens when each step fails. Steps 6 to 10 are implemented in `languageservice.py`. The other steps are the production design.
+[docs/architecture.md](docs/architecture.md) walks through all 13 steps, with a sequence diagram, a time budget for a 500-page document, and what happens when each step fails. The size and page checks from step 2, and steps 6 to 10, are implemented in `languageservice.py`. The other steps are the production design.
 
 ## How the pipeline works
 
 ```
 PDF / image upload
-        |  reject if over 500 MB
+        |
+        v
+0. Pre-check, before any Azure call
+   - size from file metadata: reject if over 500 MB
+   - pages counted inside the file: reject if over 2,000
+     (PDF page list, TIFF frames, single images = 1)
+        |
         v
 1. Azure AI Document Intelligence (prebuilt-read)                  resource: idpgtadoc
         |  extracted text
@@ -62,6 +68,8 @@ PDF / image upload
         v
 JSON response
 ```
+
+The pre-check detects the file type from the file's first bytes, not its extension. If it can't determine the page count, it lets the file through rather than guessing. That covers encrypted or damaged PDFs and Office files. Document Intelligence then enforces its own limit. Details: [How the size and page checks work](docs/architecture.md#how-the-size-and-page-checks-work).
 
 The pipeline **fails closed**. If any Language request fails, any chunk returns an error, or the final check finds a surviving card number or CVV, it returns `{"status": "error"}` and no text at all. The error message never includes document content.
 
@@ -139,11 +147,13 @@ The `azure-ai-textanalytics` SDK (5.4.0, the latest release) supports Language A
 {
   "status": "ok",
   "source_file": "sample_pci_test.pdf",
+  "file_type": "pdf",
+  "size_bytes": 1973,
   "pages": 1,
   "characters": 430,
   "language_api_version": "2026-05-15-preview",
   "language_model_versions": ["2026-05-01"],
-  "timings": {"document_intelligence_s": 2.5, "language_s": 0.3},
+  "timings": {"precheck_s": 0.037, "document_intelligence_s": 3.7, "language_s": 0.4},
   "pii_detected": true,
   "category_counts": {"Address": 1, "CVV": 2, "CreditCardNumber": 2, "DateTime": 2, "Email": 1, "Person": 2, "PhoneNumber": 1},
   "rule_only_detections": 0,
@@ -160,7 +170,8 @@ The `azure-ai-textanalytics` SDK (5.4.0, the latest release) supports Language A
 | `source` | `language` (found by Azure AI Language) or `rule` (found only by the rule layer) |
 | `rule_only_detections` | Values only the rule layer caught. A non-zero count means the Language service missed something, so track it over time |
 | `language_api_version`, `language_model_versions` | Recorded for audit |
-| `timings` | Seconds spent in Document Intelligence and in Language |
+| `file_type`, `size_bytes` | From the pre-check. The type is detected from the file's first bytes |
+| `timings` | Seconds spent in the pre-check, Document Intelligence, and Language |
 
 ## Service limits
 
@@ -269,6 +280,7 @@ Measured with `scripts/benchmark.py`:
 |-------|--------------------|-----------------------------|
 | Characters extracted | 430 | 528,527 |
 | Chunks / Language requests | 1 / 1 | 109 / 22 |
+| Size and page pre-check | 37 ms | 26 ms |
 | Document Intelligence | 2.5 s | 28.8 s (58 ms per page) |
 | Language PII, 5 parallel requests | 0.3 s | 11.9 s |
 | Rules, masking, validation | under 0.01 s | 0.1 s |
@@ -279,6 +291,7 @@ Measured with `scripts/benchmark.py`:
 | Document Intelligence is stable | 28.3 s to 28.8 s across three runs of the 500-page file |
 | Parallel Language calls matter | The same 22 requests took 47.4 s one at a time and 11.9 s with 5 in parallel, about 4x faster |
 | Rules and validation are cheap | About 0.1 s for 500 pages |
+| The page pre-check is cheap | 26 ms for the 500-page PDF and 64 ms for a 2,000-page PDF. The 1-page figure is higher because it includes loading the PDF library |
 | Command-line run agrees | `python languageservice.py` on the 500-page file took 40.2 s |
 
 These numbers are for a text PDF. Scanned PDFs need full OCR and are usually much larger files, so expect them to be slower. They were not measured here. Test with your own scanned samples before you size anything.
@@ -300,7 +313,7 @@ This is why the pipeline uses the preview API with an explicit category list.
 |-----|------|---------------|
 | CVV and expiry detection rely on preview features | Preview terms apply, and behavior can change between versions | Keep the rule layer and output check, get compliance sign-off for preview use, and re-run `score_results.py` when the API or model version changes |
 | No rule for SSNs or bank account numbers | These depend entirely on the Language service | Add label-anchored rules if your documents use consistent labels |
-| Page count is not checked before upload | Files over 2,000 pages fail at Document Intelligence instead of up front | Count pages client-side before submitting |
+| Page pre-check covers PDF, TIFF, and single images only | PPTX, XLS, DOCX, and encrypted or damaged PDFs reach Document Intelligence without a page check, and fail there if they're too large | Count slides for PPTX and worksheets for XLS. Estimate DOCX pages from characters |
 | Large files are processed in one Document Intelligence call | A failure means redoing the whole file | Split files over a few hundred pages into page ranges with the `pages` parameter |
 | Concurrency is limited per process only | Several workers together can exceed Language's 300 requests-per-minute limit on S0 | Use a shared rate limiter in production. Retries on 429 are already in place |
 | Overlapping chunks can report an entity twice if the two chunks detect slightly different spans | Duplicate entries in `entities` | Masking is unaffected. Merge overlapping spans if the list needs to be exact |
@@ -365,7 +378,7 @@ Do not rely on a single detector for card data. Layer the controls in this table
 
 General rules:
 
-- **Validate before upload.** Check file type, file size, and page count. A rejected upload costs nothing, while a failed analysis wastes time and quota.
+- **Validate before upload.** Check file type, file size, and page count. A rejected upload costs nothing, while a failed analysis wastes time and quota. Size comes from file metadata. Pages have to be counted inside the file, which took 26 ms for 500 PDF pages. See [How the size and page checks work](docs/architecture.md#how-the-size-and-page-checks-work).
 - **Choose chunk boundaries carefully.** Split Language input at line or paragraph boundaries and overlap chunks, as this pipeline does. Keep the rule layer as a second line of defense.
 - **Use the async Language API for bulk jobs if you need fewer requests.** It accepts 25 documents per request, but caps the total at 125,000 characters, which is 25 chunks of 5,000 characters. It rejects the whole request if any document is too large, so validate chunk sizes first.
 - **Request only the categories you need.** Each extra general category adds entities to review without protecting more card data.

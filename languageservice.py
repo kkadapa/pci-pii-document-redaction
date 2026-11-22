@@ -1,5 +1,7 @@
 """
 PCI/PII redaction pipeline:
+  0. Pre-check: reject files over 500 MB or 2,000 pages before calling any service. Pages
+     are counted from the file itself (PDF page list, TIFF frames, single images = 1).
   1. Azure AI Document Intelligence (prebuilt-read) extracts text from the document.
   2. Azure AI Language PII detection (REST API) finds sensitive values. Requests run in
      parallel over overlapping chunks, with an explicit category list that includes the
@@ -37,6 +39,7 @@ load_dotenv()
 
 # --- Limits (see README "Service limits") ---------------------------------------------
 MAX_FILE_BYTES = 500 * 1024 * 1024   # Document Intelligence S0 max document size
+MAX_PAGES = 2000                     # Document Intelligence S0 max pages per analysis
 MAX_CHARS_PER_DOC = 5000             # Language sync limit is 5,120 text elements
 CHUNK_OVERLAP = 100                  # so values cut at a chunk boundary are still seen whole
 MAX_DOCS_PER_REQUEST = 5             # Language sync limit for PII
@@ -79,6 +82,59 @@ def _require_env(name):
     if not value:
         raise PipelineError(f"Missing environment variable: {name}")
     return value
+
+
+# --- Step 0: Pre-checks (size and page count) ----------------------------------------------
+
+def detect_file_type(head):
+    """Identify the file type from its first bytes rather than trusting the extension."""
+    if head.startswith(b"%PDF"):
+        return "pdf"
+    if head[:4] in (b"II*\x00", b"MM\x00*"):
+        return "tiff"
+    if head.startswith(b"\xff\xd8\xff"):
+        return "jpeg"
+    if head.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if head.startswith(b"BM"):
+        return "bmp"
+    if head[4:8] == b"ftyp" and head[8:12] in (b"heic", b"heix", b"heif", b"mif1", b"msf1"):
+        return "heif"
+    return "other"
+
+
+def count_pages(file_path):
+    """
+    Return (file_type, page count) without rendering anything, or (file_type, None) if the
+    count can't be determined. In that case Document Intelligence still enforces its limit.
+    """
+    with open(file_path, "rb") as f:
+        file_type = detect_file_type(f.read(16))
+
+    if file_type in ("jpeg", "png", "bmp", "heif"):
+        return file_type, 1
+    try:
+        if file_type == "pdf":
+            from pypdf import PdfReader
+            return file_type, len(PdfReader(file_path).pages)
+        if file_type == "tiff":
+            from PIL import Image
+            with Image.open(file_path) as img:
+                return file_type, getattr(img, "n_frames", 1)
+    except Exception:  # encrypted, damaged, or unusual files: leave the decision to the service
+        return file_type, None
+    return file_type, None
+
+
+def precheck(file_path):
+    """Reject files over the Document Intelligence limits before uploading anything."""
+    size = os.path.getsize(file_path)
+    if size > MAX_FILE_BYTES:
+        raise PipelineError(f"File is {size:,} bytes; the limit is {MAX_FILE_BYTES:,} bytes (500 MB)")
+    file_type, pages = count_pages(file_path)
+    if pages is not None and pages > MAX_PAGES:
+        raise PipelineError(f"File has {pages:,} pages; the limit is {MAX_PAGES:,} pages")
+    return {"file_type": file_type, "size_bytes": size, "pages_counted": pages}
 
 
 # --- Step 1: Document Intelligence -------------------------------------------------------
@@ -260,14 +316,14 @@ def validate_masked(masked_text):
 
 def process_document(file_path):
     """Run the full pipeline on a local file and return a JSON-serializable dict."""
-    size = os.path.getsize(file_path)
-    if size > MAX_FILE_BYTES:
-        raise PipelineError(f"File is {size} bytes; the Document Intelligence limit is {MAX_FILE_BYTES}")
+    timings = {}
+    t0 = time.perf_counter()
+    intake = precheck(file_path)
+    timings["precheck_s"] = round(time.perf_counter() - t0, 3)
 
     with open(file_path, "rb") as f:
         file_bytes = f.read()
 
-    timings = {}
     t0 = time.perf_counter()
     text, pages = extract_text(get_document_client(), file_bytes)
     timings["document_intelligence_s"] = round(time.perf_counter() - t0, 1)
@@ -290,6 +346,8 @@ def process_document(file_path):
     return {
         "status": "ok",
         "source_file": os.path.basename(file_path),
+        "file_type": intake["file_type"],
+        "size_bytes": intake["size_bytes"],
         "pages": pages,
         "characters": len(text),
         "language_api_version": LANGUAGE_API_VERSION,
