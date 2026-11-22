@@ -11,8 +11,15 @@ The response contains only masked text and entity metadata (category, position, 
 
 > **Status: prototype.** On the 500-page synthetic test, every planted card number, CVV, expiry date, email, phone number, and name was masked. CVV and expiry detection rely on Language API *preview* features. Read [Known gaps](#known-gaps) and [Enterprise approach](#enterprise-approach-for-financial-institutions) before using this with real card data.
 
+## Target-state architecture
+
+![Target-state architecture diagram](docs/architecture.svg)
+
+[docs/architecture.md](docs/architecture.md) walks through all 13 steps, with a sequence diagram, a time budget for a 500-page document, and what happens when each step fails. Steps 6 to 10 are implemented in `languageservice.py`. The other steps are the production design.
+
 ## Contents
 
+- [Target-state architecture](#target-state-architecture)
 - [How it works](#how-it-works)
 - [Project files](#project-files)
 - [Setup and usage](#setup-and-usage)
@@ -77,6 +84,8 @@ To change the list, edit `PII_CATEGORIES` in `languageservice.py`. General categ
 | `scripts/score_results.py` | Scores pipeline output against the ground truth |
 | `scripts/benchmark.py` | Times each stage, and compares 1 worker with N parallel workers for Language calls |
 | `scripts/probe_pii_categories.py` | Calls the Language REST API to compare what each API version detects |
+| `scripts/render_architecture.py` | Generates `docs/architecture.svg` |
+| `docs/architecture.md` | Target-state architecture and end-to-end flow |
 | `sample_pci_test.pdf` | One-page test form with public test card numbers and sample CVVs. Not real accounts |
 | `requirements.txt` | Pinned dependencies |
 | `test_data/` | Generated test files and results. Not committed |

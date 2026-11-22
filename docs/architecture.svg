@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="965" viewBox="0 0 1800 965" font-family="Segoe UI, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif">
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#57606A"/>
+  </marker>
+  <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%">
+    <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#1F2328" flood-opacity="0.10"/>
+  </filter>
+</defs>
+<rect width="1800" height="965" fill="#F6F8FA"/>
+<text x="30" y="46" font-size="24" fill="#1F2328" font-weight="bold" text-anchor="start" font-style="normal">Target-state architecture: PCI/PII document redaction on Azure</text>
+<text x="30" y="72" font-size="13" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">Upload → OCR → PII/PCI detection → masking → JSON response. Limits from Microsoft docs (Nov 2026). Timings measured with this repo on a 500-page text PDF.</text>
+<rect x="1290" y="30" width="480" height="58" rx="6" fill="#FFFFFF" stroke="#D0D7DE"/>
+<rect x="1304" y="44" width="9" height="9" rx="1.5" fill="#B7791F"/>
+<text x="1319" y="53" font-size="11.5" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Service limit (Microsoft docs)</text>
+<rect x="1505" y="44" width="9" height="9" rx="1.5" fill="#1A7F37"/>
+<text x="1520" y="53" font-size="11.5" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Measured in this repo</text>
+<rect x="1665" y="44" width="9" height="9" rx="4" fill="#8C959F"/>
+<text x="1680" y="53" font-size="11.5" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Design note</text>
+<rect x="1304" y="63" width="52" height="16" rx="8" fill="#6B3FA0"/>
+<text x="1330" y="75" font-size="9.5" fill="#FFFFFF" font-weight="bold" text-anchor="middle" font-style="normal">IN REPO</text>
+<text x="1364" y="75" font-size="11.5" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Implemented in languageservice.py today; other components are target state</text>
+<g filter="url(#shadow)"><rect x="30" y="140" width="190" height="677" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
+<path d="M30,148 a8,8 0 0 1 8,-8 h174 a8,8 0 0 1 8,8 v30 h-190 z" fill="#1F2328"/>
+<text x="125.0" y="164" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="middle" font-style="normal">Client / user</text>
+<text x="42" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Bank portal, back-office</text>
+<text x="42" y="214" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">app, or batch uploader</text>
+<text x="42" y="232" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">A. Upload document</text>
+<text x="42" y="282" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">B. Get job ID (seconds)</text>
+<text x="42" y="420" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">C. Wait: poll with</text>
+<text x="42" y="436" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">    Retry-After, or webhook</text>
+<text x="42" y="700" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">D. Receive masked JSON</text>
+<text x="42" y="722" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">~41 s for 500 text pages</text>
+<text x="42" y="738" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">~3 s for 1 page</text>
+<text x="300" y="128" font-size="11.5" fill="#57606A" font-weight="bold" text-anchor="start" font-style="normal">INTAKE  ·  synchronous, returns in seconds</text>
+<g filter="url(#shadow)"><rect x="300" y="140" width="270" height="170" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
+<path d="M300,148 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#0F6CBD"/>
+<circle cx="320" cy="159" r="11" fill="#FFFFFF"/>
+<text x="320" y="163.5" font-size="12" fill="#0F6CBD" font-weight="bold" text-anchor="middle" font-style="normal">1</text>
+<text x="338" y="164" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">API Management</text>
+<text x="314" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Single entry point</text>
+<rect x="314" y="208.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="328" y="217" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Entra ID (OAuth) authentication</text>
+<rect x="314" y="226.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="328" y="235" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">WAF, TLS in transit</text>
+<rect x="314" y="244.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="328" y="253" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Returns 202 Accepted + job ID</text>
+<g filter="url(#shadow)"><rect x="600" y="140" width="270" height="170" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
+<path d="M600,148 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#0F6CBD"/>
+<circle cx="620" cy="159" r="11" fill="#FFFFFF"/>
+<text x="620" y="163.5" font-size="12" fill="#0F6CBD" font-weight="bold" text-anchor="middle" font-style="normal">2</text>
+<text x="638" y="164" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Intake Function</text>
+<text x="614" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Validate before anything is stored</text>
+<rect x="614" y="208.5" width="8" height="8" rx="1.5" fill="#B7791F"/>
+<text x="628" y="217" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">File ≤ 500 MB (hard limit)</text>
+<rect x="614" y="226.5" width="8" height="8" rx="1.5" fill="#B7791F"/>
+<text x="628" y="235" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">Pages ≤ 2,000 (hard limit)</text>
+<rect x="614" y="244.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="628" y="253" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">PDF, JPEG, PNG, BMP, TIFF, HEIF,</text>
+<text x="628" y="269" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">DOCX, PPTX, XLS</text>
+<g filter="url(#shadow)"><rect x="900" y="140" width="270" height="170" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
+<path d="M900,148 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#0F6CBD"/>
+<circle cx="920" cy="159" r="11" fill="#FFFFFF"/>
+<text x="920" y="163.5" font-size="12" fill="#0F6CBD" font-weight="bold" text-anchor="middle" font-style="normal">3</text>
+<text x="938" y="164" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Blob Storage (raw)</text>
+<text x="914" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Quarantine container</text>
+<rect x="914" y="208.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="928" y="217" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Private endpoint, encrypted at rest</text>
+<rect x="914" y="226.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="928" y="235" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Deleted after masking (step 12)</text>
+<rect x="914" y="244.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="928" y="253" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Lifecycle rule removes leftovers</text>
+<g filter="url(#shadow)"><rect x="1200" y="140" width="270" height="170" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
+<path d="M1200,148 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#0F6CBD"/>
+<circle cx="1220" cy="159" r="11" fill="#FFFFFF"/>
+<text x="1220" y="163.5" font-size="12" fill="#0F6CBD" font-weight="bold" text-anchor="middle" font-style="normal">4</text>
+<text x="1238" y="164" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Defender for Storage</text>
+<text x="1214" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Malware scan on upload</text>
+<rect x="1214" y="208.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="1228" y="217" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Infected file: job rejected</text>
+<rect x="1214" y="226.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="1228" y="235" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Clean file: job enqueued</text>
+<g filter="url(#shadow)"><rect x="1500" y="140" width="270" height="170" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
+<path d="M1500,148 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#0F6CBD"/>
+<circle cx="1520" cy="159" r="11" fill="#FFFFFF"/>
+<text x="1520" y="163.5" font-size="12" fill="#0F6CBD" font-weight="bold" text-anchor="middle" font-style="normal">5</text>
+<text x="1538" y="164" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Service Bus queue</text>
+<text x="1514" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">One message per job</text>
+<rect x="1514" y="208.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="1528" y="217" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Retries and dead-letter queue</text>
+<rect x="1514" y="226.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="1528" y="235" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Workers scale on queue depth</text>
+<rect x="1514" y="244.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="1528" y="253" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Decouples upload from processing</text>
+<path d="M220,228 L296,228" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="258" y="220" font-size="10.5" fill="#57606A" font-weight="normal" text-anchor="middle" font-style="normal">POST /jobs</text>
+<path d="M300,278 L224,278" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="258" y="296" font-size="10.5" fill="#57606A" font-weight="normal" text-anchor="middle" font-style="normal">202 + job ID</text>
+<path d="M570,225.0 L596,225.0" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M870,225.0 L896,225.0" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M1170,225.0 L1196,225.0" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M1470,225.0 L1496,225.0" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="285" y="345" width="1500" height="255" rx="10" fill="#F3EEFA" stroke="#6B3FA0" stroke-opacity="0.45" stroke-dasharray="6 4"/>
+<text x="300" y="369" font-size="11.5" fill="#6B3FA0" font-weight="bold" text-anchor="start" font-style="normal">PROCESSING  ·  Redaction worker (Container Apps or Functions)  ·  fails closed: any error returns no output</text>
+<g filter="url(#shadow)"><rect x="1500" y="385" width="270" height="190" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
+<path d="M1500,393 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#00796B"/>
+<circle cx="1520" cy="404" r="11" fill="#FFFFFF"/>
+<text x="1520" y="408.5" font-size="12" fill="#00796B" font-weight="bold" text-anchor="middle" font-style="normal">6</text>
+<text x="1538" y="409" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Document Intelligence</text>
+<rect x="1708" y="395" width="52" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.22" stroke="#FFFFFF" stroke-opacity="0.7"/>
+<text x="1734" y="408" font-size="9.5" fill="#FFFFFF" font-weight="bold" text-anchor="middle" font-style="normal">IN REPO</text>
+<text x="1514" y="443" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">prebuilt-read OCR</text>
+<rect x="1514" y="453.5" width="8" height="8" rx="1.5" fill="#B7791F"/>
+<text x="1528" y="462" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">S0: 15 analyze/s, 50 get/s</text>
+<text x="1528" y="478" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">(adjustable)</text>
+<rect x="1514" y="487.5" width="8" height="8" rx="1.5" fill="#B7791F"/>
+<text x="1528" y="496" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">Poll results ≥ 2 s apart</text>
+<rect x="1514" y="505.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="1528" y="514" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Large files: split with pages range</text>
+<rect x="1514" y="523.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
+<text x="1528" y="532" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">500 pages in 28.8 s (58 ms/page)</text>
+<g filter="url(#shadow)"><rect x="1200" y="385" width="270" height="190" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
+<path d="M1200,393 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#6B3FA0"/>
+<circle cx="1220" cy="404" r="11" fill="#FFFFFF"/>
+<text x="1220" y="408.5" font-size="12" fill="#6B3FA0" font-weight="bold" text-anchor="middle" font-style="normal">7</text>
+<text x="1238" y="409" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Chunker</text>
+<rect x="1408" y="395" width="52" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.22" stroke="#FFFFFF" stroke-opacity="0.7"/>
+<text x="1434" y="408" font-size="9.5" fill="#FFFFFF" font-weight="bold" text-anchor="middle" font-style="normal">IN REPO</text>
+<text x="1214" y="443" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Split text at line breaks</text>
+<rect x="1214" y="453.5" width="8" height="8" rx="1.5" fill="#B7791F"/>
+<text x="1228" y="462" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">≤ 5,000 chars per chunk (API max</text>
+<text x="1228" y="478" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">5,120)</text>
+<rect x="1214" y="487.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="1228" y="496" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">100-character overlap between chunks</text>
+<rect x="1214" y="505.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
+<text x="1228" y="514" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">528,527 chars → 109 chunks</text>
+<g filter="url(#shadow)"><rect x="900" y="385" width="270" height="190" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
+<path d="M900,393 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#00796B"/>
+<circle cx="920" cy="404" r="11" fill="#FFFFFF"/>
+<text x="920" y="408.5" font-size="12" fill="#00796B" font-weight="bold" text-anchor="middle" font-style="normal">8</text>
+<text x="938" y="409" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Azure AI Language PII</text>
+<rect x="1108" y="395" width="52" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.22" stroke="#FFFFFF" stroke-opacity="0.7"/>
+<text x="1134" y="408" font-size="9.5" fill="#FFFFFF" font-weight="bold" text-anchor="middle" font-style="normal">IN REPO</text>
+<text x="914" y="443" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">API 2026-05-15-preview, explicit</text>
+<text x="914" y="459" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">categories incl. CVV, ExpirationDate</text>
+<rect x="914" y="469.5" width="8" height="8" rx="1.5" fill="#B7791F"/>
+<text x="928" y="478" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">5 docs per request, 1 MB per request</text>
+<rect x="914" y="487.5" width="8" height="8" rx="1.5" fill="#B7791F"/>
+<text x="928" y="496" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">S0: 100 req/s, 300 req/min</text>
+<rect x="914" y="505.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="928" y="514" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">5 parallel requests, retry on 429</text>
+<rect x="914" y="523.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
+<text x="928" y="532" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">22 requests in 11.9 s</text>
+<g filter="url(#shadow)"><rect x="600" y="385" width="270" height="190" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
+<path d="M600,393 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#6B3FA0"/>
+<circle cx="620" cy="404" r="11" fill="#FFFFFF"/>
+<text x="620" y="408.5" font-size="12" fill="#6B3FA0" font-weight="bold" text-anchor="middle" font-style="normal">9</text>
+<text x="638" y="409" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Rule layer</text>
+<rect x="808" y="395" width="52" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.22" stroke="#FFFFFF" stroke-opacity="0.7"/>
+<text x="834" y="408" font-size="9.5" fill="#FFFFFF" font-weight="bold" text-anchor="middle" font-style="normal">IN REPO</text>
+<text x="614" y="443" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Deterministic backstop</text>
+<rect x="614" y="453.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="628" y="462" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Card numbers: 13-19 digits + Luhn</text>
+<rect x="614" y="471.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="628" y="480" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">CVV and expiry after their labels</text>
+<rect x="614" y="489.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
+<text x="628" y="498" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">0 extra hits: Language caught all 25</text>
+<text x="628" y="514" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">CVVs and expiry dates</text>
+<g filter="url(#shadow)"><rect x="300" y="385" width="270" height="190" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
+<path d="M300,393 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#6B3FA0"/>
+<circle cx="320" cy="404" r="11" fill="#FFFFFF"/>
+<text x="320" y="408.5" font-size="12" fill="#6B3FA0" font-weight="bold" text-anchor="middle" font-style="normal">10</text>
+<text x="338" y="409" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Mask + validate</text>
+<rect x="508" y="395" width="52" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.22" stroke="#FFFFFF" stroke-opacity="0.7"/>
+<text x="534" y="408" font-size="9.5" fill="#FFFFFF" font-weight="bold" text-anchor="middle" font-style="normal">IN REPO</text>
+<text x="314" y="443" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Mask the union of all spans with *</text>
+<rect x="314" y="453.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="328" y="462" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Block if a card number or CVV</text>
+<text x="328" y="478" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">survives</text>
+<rect x="314" y="487.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="328" y="496" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Any failed request: no output</text>
+<rect x="314" y="505.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
+<text x="328" y="514" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">Rules + mask + check: 0.1 s</text>
+<path d="M1635,310 L1635,381" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M1500,480.0 L1474,480.0" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M1200,480.0 L1174,480.0" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M900,480.0 L874,480.0" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600,480.0 L574,480.0" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="300" y="643" font-size="11.5" fill="#57606A" font-weight="bold" text-anchor="start" font-style="normal">DELIVERY</text>
+<g filter="url(#shadow)"><rect x="300" y="655" width="270" height="162" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
+<path d="M300,663 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#0F6CBD"/>
+<circle cx="320" cy="674" r="11" fill="#FFFFFF"/>
+<text x="320" y="678.5" font-size="12" fill="#0F6CBD" font-weight="bold" text-anchor="middle" font-style="normal">13</text>
+<text x="338" y="679" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Results API (via APIM)</text>
+<text x="314" y="713" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">GET /jobs/{id}</text>
+<rect x="314" y="723.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="328" y="732" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">202 while running</text>
+<rect x="314" y="741.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="328" y="750" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">200 + masked JSON when done</text>
+<rect x="314" y="759.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="328" y="768" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Or push via webhook (Event Grid)</text>
+<g filter="url(#shadow)"><rect x="600" y="655" width="270" height="162" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
+<path d="M600,663 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#1A7F37"/>
+<circle cx="620" cy="674" r="11" fill="#FFFFFF"/>
+<text x="620" y="678.5" font-size="12" fill="#1A7F37" font-weight="bold" text-anchor="middle" font-style="normal">11</text>
+<text x="638" y="679" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Result store</text>
+<text x="614" y="713" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Masked JSON only</text>
+<rect x="614" y="723.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="628" y="732" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Entity metadata, no raw values</text>
+<rect x="614" y="741.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="628" y="750" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Audit: API and model versions</text>
+<g filter="url(#shadow)"><rect x="900" y="655" width="270" height="162" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
+<path d="M900,663 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#1A7F37"/>
+<circle cx="920" cy="674" r="11" fill="#FFFFFF"/>
+<text x="920" y="678.5" font-size="12" fill="#1A7F37" font-weight="bold" text-anchor="middle" font-style="normal">12</text>
+<text x="938" y="679" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Cleanup</text>
+<text x="914" y="713" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Runs once the result is written</text>
+<rect x="914" y="723.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="928" y="732" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Delete raw file and extracted text</text>
+<rect x="914" y="741.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="928" y="750" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Logs: IDs, counts, timings only</text>
+<path d="M435,575 L435,618 L735,618 L735,651" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M870,736.0 L896,736.0" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600,736.0 L574,736.0" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M300,700 L224,700" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="258" y="690" font-size="10.5" fill="#57606A" font-weight="normal" text-anchor="middle" font-style="normal">200 +</text>
+<text x="258" y="718" font-size="10.5" fill="#57606A" font-weight="normal" text-anchor="middle" font-style="normal">JSON</text>
+<g filter="url(#shadow)"><rect x="1200" y="655" width="585" height="162" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
+<text x="1216" y="679" font-size="13" fill="#1F2328" font-weight="bold" text-anchor="start" font-style="normal">Measured: 500-page synthetic bank statement (861 KB text PDF)</text>
+<text x="1216" y="705" font-size="11.5" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Document Intelligence</text>
+<rect x="1375" y="695" width="142.3" height="12" rx="2" fill="#00796B"/>
+<text x="1523.339373970346" y="705.5" font-size="11.5" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">28.8 s</text>
+<text x="1216" y="724" font-size="11.5" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Language PII, 5 parallel</text>
+<rect x="1375" y="714" width="58.8" height="12" rx="2" fill="#00796B"/>
+<text x="1439.813838550247" y="724.5" font-size="11.5" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">11.9 s</text>
+<text x="1216" y="743" font-size="11.5" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Rules + mask + validate</text>
+<rect x="1375" y="733" width="2.0" height="12" rx="2" fill="#6B3FA0"/>
+<text x="1383" y="743.5" font-size="11.5" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">0.1 s</text>
+<text x="1216" y="762" font-size="11.5" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">End to end, current</text>
+<rect x="1375" y="752" width="201.6" height="12" rx="2" fill="#1A7F37"/>
+<text x="1582.64744645799" y="762.5" font-size="11.5" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">40.8 s</text>
+<text x="1216" y="781" font-size="11.5" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">End to end, first version</text>
+<rect x="1375" y="771" width="300.0" height="12" rx="2" fill="#8C959F"/>
+<text x="1681.0" y="781.5" font-size="11.5" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">60.7 s</text>
+<text x="1216" y="805" font-size="11" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Single run, East US, Nov 22 2026. Scanned PDFs not measured; expect slower OCR.</text>
+<rect x="30" y="845" width="1755" height="95" rx="10" fill="#FFFFFF" stroke="#D0D7DE"/>
+<text x="46" y="871" font-size="11.5" fill="#57606A" font-weight="bold" text-anchor="start" font-style="normal">CROSS-CUTTING CONTROLS  ·  every component above is in PCI DSS scope</text>
+<rect x="46" y="887" width="313" height="32" rx="16" fill="#EEF2F6" stroke="#D0D7DE"/>
+<text x="202.375" y="907.5" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="middle" font-style="normal">Entra ID + managed identity (no keys in code)</text>
+<rect x="372.75" y="887" width="247" height="32" rx="16" fill="#EEF2F6" stroke="#D0D7DE"/>
+<text x="496.375" y="907.5" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="middle" font-style="normal">Key Vault for any remaining secrets</text>
+<rect x="634.0" y="887" width="306" height="32" rx="16" fill="#EEF2F6" stroke="#D0D7DE"/>
+<text x="787.1" y="907.5" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="middle" font-style="normal">Private endpoints, public network access off</text>
+<rect x="954.2" y="887" width="293" height="32" rx="16" fill="#EEF2F6" stroke="#D0D7DE"/>
+<text x="1100.75" y="907.5" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="middle" font-style="normal">Azure Monitor: no document content in logs</text>
+<rect x="1261.3" y="887" width="300" height="32" rx="16" fill="#EEF2F6" stroke="#D0D7DE"/>
+<text x="1411.125" y="907.5" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="middle" font-style="normal">Regression test on every API / model change</text>
+</svg>
