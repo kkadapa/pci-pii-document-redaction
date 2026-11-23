@@ -13,7 +13,7 @@ The response contains only masked text and entity metadata (category, position, 
 
 ## Contents
 
-- [Target-state architecture](#target-state-architecture)
+- [Target-state architecture](#target-state-architecture): logical flow and technical implementation
 - [How the pipeline works](#how-the-pipeline-works)
 - [Project files](#project-files)
 - [Setup and usage](#setup-and-usage)
@@ -25,9 +25,22 @@ The response contains only masked text and entity metadata (category, position, 
 
 ## Target-state architecture
 
+Two views of the same design:
+
+| View | Shows | Walkthrough |
+|------|-------|-------------|
+| Logical flow | The 13 steps from job creation to masked JSON, with limits and measured timings | [docs/architecture.md](docs/architecture.md): sequence diagram, time budgets for 500 and 2,000 pages, failure handling |
+| Technical implementation | Each Azure service with official Azure icons: what API Management does, which Function runs which check, identities, and networking | [docs/technical-architecture.md](docs/technical-architecture.md): API Management policies, API contract, managed-identity roles |
+
+In both, the size and page checks and the redaction worker are implemented in `languageservice.py`. The other components are the production design and haven't been deployed.
+
+### Logical flow
+
 ![Target-state architecture diagram](docs/architecture.svg)
 
-[docs/architecture.md](docs/architecture.md) walks through all 13 steps, with a sequence diagram, time budgets for 500- and 2,000-page documents, and what happens when each step fails. The size and page checks from step 2, and steps 6 to 10, are implemented in `languageservice.py`. The other steps are the production design.
+### Technical implementation on Azure
+
+![Technical implementation diagram with Azure icons](docs/technical-architecture.svg)
 
 ## How the pipeline works
 
@@ -35,10 +48,13 @@ The response contains only masked text and entity metadata (category, position, 
 PDF / image upload
         |
         v
-0. Pre-check, before any Azure call
+0. Pre-check, before any Azure AI call
    - size from file metadata: reject if over 500 MB
+   - real file type from the first bytes, not the extension
    - pages counted inside the file: reject if over 2,000
      (PDF page list, TIFF frames, single images = 1)
+   In this repo: precheck() in languageservice.py
+   In production: split between API Management and the Intake Function (see below)
         |
         v
 1. Azure AI Document Intelligence (prebuilt-read)                  resource: gtadoc
@@ -69,7 +85,21 @@ PDF / image upload
 JSON response
 ```
 
-The pre-check detects the file type from the file's first bytes, not its extension. If it can't determine the page count, it lets the file through rather than guessing. That covers encrypted or damaged PDFs and Office files. Document Intelligence then enforces its own limit. Details: [How the size and page checks work](docs/architecture.md#how-the-size-and-page-checks-work).
+If the pre-check can't determine the page count, it lets the file through rather than guessing. That covers encrypted or damaged PDFs and Office files. Document Intelligence then enforces its own limit.
+
+#### Where the pre-check runs in production
+
+In production, the client uploads the file straight to Blob Storage with a short-lived upload URL, so API Management never receives the file. The checks are therefore split:
+
+| Check | API Management | Intake Function | Why |
+|-------|----------------|-----------------|-----|
+| Caller identity, rate limit, quota | Yes | | Decided from the request alone, before anything is stored |
+| Size ≤ 500 MB | Early check on the *declared* size | Authoritative check on the *actual* size, from blob properties | The client declares the size to API Management and could lie; the blob's size can't be faked |
+| File type | Early check on the *declared* type | Authoritative check from the file's first bytes | Same reason |
+| Pages ≤ 2,000 | No | Yes, counted inside the file | API Management never sees the file, and its policies can't parse PDF or TIFF structure |
+| Malware | No | No: Defender for Storage scans first, and its clean result triggers the Intake Function | |
+
+`precheck()` in `languageservice.py` is the Intake Function's logic. API Management's checks are configuration (policies), shown in [docs/technical-architecture.md](docs/technical-architecture.md#what-api-management-does). More detail: [How the size and page checks work](docs/architecture.md#how-the-size-and-page-checks-work).
 
 The pipeline **fails closed**. If any Language request fails, any chunk returns an error, or the final check finds a surviving card number or CVV, it returns `{"status": "error"}` and no text at all. The error message never includes document content.
 
@@ -99,8 +129,11 @@ The `azure-ai-textanalytics` SDK (5.4.0, the latest release) supports Language A
 | `scripts/benchmark.py` | Times each stage, and compares 1 worker with N parallel workers for Language calls |
 | `scripts/test_precheck.py` | Tests the size and page-count pre-check offline, including PDFs and TIFFs at and over the 2,000-page limit |
 | `scripts/probe_pii_categories.py` | Calls the Language REST API to compare what each API version detects |
-| `scripts/render_architecture.py` | Generates `docs/architecture.svg` |
-| `docs/architecture.md` | Target-state architecture and end-to-end flow |
+| `scripts/render_architecture.py` | Generates `docs/architecture.svg` (logical flow) |
+| `scripts/render_technical_architecture.py` | Generates `docs/technical-architecture.svg` (technical implementation, with Azure icons) |
+| `docs/architecture.md` | Logical flow, step by step |
+| `docs/technical-architecture.md` | Technical implementation: services, API Management policies, API contract, identities |
+| `docs/icons/azure/` | Official Azure architecture icons used in the technical diagram, with Microsoft's terms of use |
 | `sample_pci_test.pdf` | One-page test form with public test card numbers and sample CVVs. Not real accounts |
 | `requirements.txt` | Pinned dependencies |
 | `test_data/` | Synthetic test statements (500 and 2,000 pages), their ground-truth files, and pipeline output. See [Test documents](#test-documents) |
@@ -374,7 +407,7 @@ Any system that receives full card numbers is in PCI DSS scope. That includes th
 
 The [target-state architecture](#target-state-architecture) separates intake from processing:
 
-- **Intake returns in seconds.** The upload is validated, stored, scanned, and queued, and the caller gets `202 Accepted` with a job ID.
+- **Intake returns in seconds.** The caller sends metadata to API Management and gets `202 Accepted` with a job ID and a short-lived upload URL. The file goes straight to Blob Storage, where it's scanned, validated by the Intake Function, and queued.
 - **Processing runs in a worker.** In testing, a 500-page text PDF took 39 to 54 seconds and a 2,000-page one about 2.5 minutes. Scanned files take longer. That's too long to hold a web request open.
 - **Delivery is by job ID.** The caller polls `GET /jobs/{id}`, honoring `Retry-After`, or receives a webhook.
 - **Nothing sensitive is kept.** The original file and extracted text are deleted as soon as the masked result is written, and a storage retention policy removes anything left behind.

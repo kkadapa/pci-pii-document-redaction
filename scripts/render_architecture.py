@@ -124,57 +124,60 @@ text(cx + cw / 2, cy0 + 24, "Client / user", size=14, color="#FFFFFF", weight="b
 for i, s in enumerate(["Bank portal, back-office", "app, or batch uploader"]):
     text(cx + 12, cy0 + 58 + i * 16, s, size=12, color=MUTED, style="italic")
 client_steps = [
-    (232, "A. Upload document"),
-    (282, "B. Get job ID (seconds)"),
-    (420, "C. Wait: poll with"),
+    (232, "A. Create job (metadata)"),
+    (282, "B. Get job ID + upload URL"),
+    (318, "C. PUT file to Blob"),
+    (420, "D. Wait: poll with"),
     (436, "    Retry-After, or webhook"),
-    (700, "D. Receive masked JSON"),
+    (700, "E. Receive masked JSON"),
     (722, "~2.5 min for 2,000 pages"),
     (738, "39-54 s for 500 pages"),
     (754, "~3 s for 1 page"),
 ]
 for y, s in client_steps:
     text(cx + 12, y, s, size=12, color=INK if not s.startswith(("~", "    ")) else MUTED,
-         weight="600" if s[:2] in ("A.", "B.", "C.", "D.") else "normal")
+         weight="600" if s[:2] in ("A.", "B.", "C.", "D.", "E.") else "normal")
 
 # Row 1: intake ----------------------------------------------------------------------------
 R1, R1H = 140, 170
-section_label(300, R1 - 12, "INTAKE  ·  synchronous, returns in seconds")
+section_label(300, R1 - 12, "INTAKE  ·  API call returns in seconds; the file goes straight to Blob Storage")
 card(0, R1, R1H, 1, "API Management", BLUE, [
-    ("sub", "Single entry point"),
-    ("note", "Entra ID (OAuth) authentication"),
-    ("note", "WAF, TLS in transit"),
-    ("note", "Returns 202 Accepted + job ID"),
+    ("sub", "Single entry point, behind a WAF"),
+    ("note", "Entra ID token, rate limits"),
+    ("limit", "Declared size ≤ 500 MB (early check)"),
+    ("note", "Returns 202 + job ID + upload URL"),
 ])
-card(1, R1, R1H, 2, "Intake Function", BLUE, [
-    ("sub", "Validate before anything is stored"),
-    ("limit", "≤ 500 MB: read from file metadata"),
+card(1, R1, R1H, 2, "Blob Storage (raw)", BLUE, [
+    ("sub", "Quarantine container"),
+    ("note", "Client uploads with a SAS URL"),
+    ("note", "File bytes never pass APIM"),
+    ("note", "Deleted after masking (step 12)"),
+])
+card(2, R1, R1H, 3, "Defender for Storage", BLUE, [
+    ("sub", "Malware scan on upload"),
+    ("note", "Result sent through Event Grid"),
+    ("note", "Infected file: job rejected"),
+])
+card(3, R1, R1H, 4, "Intake Function", BLUE, [
+    ("sub", "Authoritative checks"),
+    ("limit", "≤ 500 MB: from blob properties"),
     ("limit", "≤ 2,000 pages: counted inside file"),
-    ("note", "PDF page list, TIFF frames, image = 1"),
+    ("note", "Real type from the file's first bytes"),
     ("measured", "Count: 500 pp 25 ms, 2,000 pp 99 ms"),
 ], in_repo=True)
-card(2, R1, R1H, 3, "Blob Storage (raw)", BLUE, [
-    ("sub", "Quarantine container"),
-    ("note", "Private endpoint, encrypted at rest"),
-    ("note", "Deleted after masking (step 12)"),
-    ("note", "Lifecycle rule removes leftovers"),
-])
-card(3, R1, R1H, 4, "Defender for Storage", BLUE, [
-    ("sub", "Malware scan on upload"),
-    ("note", "Infected file: job rejected"),
-    ("note", "Clean file: job enqueued"),
-])
 card(4, R1, R1H, 5, "Service Bus queue", BLUE, [
     ("sub", "One message per job"),
     ("note", "Retries and dead-letter queue"),
     ("note", "Workers scale on queue depth"),
     ("note", "Decouples upload from processing"),
 ])
-# client <-> APIM
+# client <-> APIM, client -> Blob
 arrow([(220, 228), (296, 228)])
 text(258, 220, "POST /jobs", size=10.5, color=MUTED, anchor="middle")
 arrow([(300, 278), (224, 278)])
-text(258, 296, "202 + job ID", size=10.5, color=MUTED, anchor="middle")
+text(258, 296, "202 + URL", size=10.5, color=MUTED, anchor="middle")
+arrow([(220, 326), (735, 326), (735, R1 + R1H + 4)], dashed=True)
+text(470, 339, "PUT file with the SAS upload URL (bypasses API Management)", size=10.5, color=MUTED, anchor="middle")
 for c in range(4):
     arrow([(COLS[c] + CARD_W, R1 + R1H / 2), (COLS[c + 1] - 4, R1 + R1H / 2)])
 

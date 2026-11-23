@@ -26,65 +26,66 @@
 <text x="125.0" y="164" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="middle" font-style="normal">Client / user</text>
 <text x="42" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Bank portal, back-office</text>
 <text x="42" y="214" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">app, or batch uploader</text>
-<text x="42" y="232" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">A. Upload document</text>
-<text x="42" y="282" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">B. Get job ID (seconds)</text>
-<text x="42" y="420" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">C. Wait: poll with</text>
+<text x="42" y="232" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">A. Create job (metadata)</text>
+<text x="42" y="282" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">B. Get job ID + upload URL</text>
+<text x="42" y="318" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">C. PUT file to Blob</text>
+<text x="42" y="420" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">D. Wait: poll with</text>
 <text x="42" y="436" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">    Retry-After, or webhook</text>
-<text x="42" y="700" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">D. Receive masked JSON</text>
+<text x="42" y="700" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">E. Receive masked JSON</text>
 <text x="42" y="722" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">~2.5 min for 2,000 pages</text>
 <text x="42" y="738" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">39-54 s for 500 pages</text>
 <text x="42" y="754" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">~3 s for 1 page</text>
-<text x="300" y="128" font-size="11.5" fill="#57606A" font-weight="bold" text-anchor="start" font-style="normal">INTAKE  ·  synchronous, returns in seconds</text>
+<text x="300" y="128" font-size="11.5" fill="#57606A" font-weight="bold" text-anchor="start" font-style="normal">INTAKE  ·  API call returns in seconds; the file goes straight to Blob Storage</text>
 <g filter="url(#shadow)"><rect x="300" y="140" width="270" height="170" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
 <path d="M300,148 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#0F6CBD"/>
 <circle cx="320" cy="159" r="11" fill="#FFFFFF"/>
 <text x="320" y="163.5" font-size="12" fill="#0F6CBD" font-weight="bold" text-anchor="middle" font-style="normal">1</text>
 <text x="338" y="164" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">API Management</text>
-<text x="314" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Single entry point</text>
+<text x="314" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Single entry point, behind a WAF</text>
 <rect x="314" y="208.5" width="8" height="8" rx="4" fill="#8C959F"/>
-<text x="328" y="217" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Entra ID (OAuth) authentication</text>
-<rect x="314" y="226.5" width="8" height="8" rx="4" fill="#8C959F"/>
-<text x="328" y="235" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">WAF, TLS in transit</text>
+<text x="328" y="217" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Entra ID token, rate limits</text>
+<rect x="314" y="226.5" width="8" height="8" rx="1.5" fill="#B7791F"/>
+<text x="328" y="235" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">Declared size ≤ 500 MB (early check)</text>
 <rect x="314" y="244.5" width="8" height="8" rx="4" fill="#8C959F"/>
-<text x="328" y="253" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Returns 202 Accepted + job ID</text>
+<text x="328" y="253" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Returns 202 + job ID + upload URL</text>
 <g filter="url(#shadow)"><rect x="600" y="140" width="270" height="170" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
 <path d="M600,148 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#0F6CBD"/>
 <circle cx="620" cy="159" r="11" fill="#FFFFFF"/>
 <text x="620" y="163.5" font-size="12" fill="#0F6CBD" font-weight="bold" text-anchor="middle" font-style="normal">2</text>
-<text x="638" y="164" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Intake Function</text>
-<rect x="808" y="150" width="52" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.22" stroke="#FFFFFF" stroke-opacity="0.7"/>
-<text x="834" y="163" font-size="9.5" fill="#FFFFFF" font-weight="bold" text-anchor="middle" font-style="normal">IN REPO</text>
-<text x="614" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Validate before anything is stored</text>
-<rect x="614" y="208.5" width="8" height="8" rx="1.5" fill="#B7791F"/>
-<text x="628" y="217" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">≤ 500 MB: read from file metadata</text>
-<rect x="614" y="226.5" width="8" height="8" rx="1.5" fill="#B7791F"/>
-<text x="628" y="235" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">≤ 2,000 pages: counted inside file</text>
+<text x="638" y="164" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Blob Storage (raw)</text>
+<text x="614" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Quarantine container</text>
+<rect x="614" y="208.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="628" y="217" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Client uploads with a SAS URL</text>
+<rect x="614" y="226.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="628" y="235" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">File bytes never pass APIM</text>
 <rect x="614" y="244.5" width="8" height="8" rx="4" fill="#8C959F"/>
-<text x="628" y="253" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">PDF page list, TIFF frames, image = 1</text>
-<rect x="614" y="262.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
-<text x="628" y="271" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">Count: 500 pp 25 ms, 2,000 pp 99 ms</text>
+<text x="628" y="253" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Deleted after masking (step 12)</text>
 <g filter="url(#shadow)"><rect x="900" y="140" width="270" height="170" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
 <path d="M900,148 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#0F6CBD"/>
 <circle cx="920" cy="159" r="11" fill="#FFFFFF"/>
 <text x="920" y="163.5" font-size="12" fill="#0F6CBD" font-weight="bold" text-anchor="middle" font-style="normal">3</text>
-<text x="938" y="164" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Blob Storage (raw)</text>
-<text x="914" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Quarantine container</text>
+<text x="938" y="164" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Defender for Storage</text>
+<text x="914" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Malware scan on upload</text>
 <rect x="914" y="208.5" width="8" height="8" rx="4" fill="#8C959F"/>
-<text x="928" y="217" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Private endpoint, encrypted at rest</text>
+<text x="928" y="217" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Result sent through Event Grid</text>
 <rect x="914" y="226.5" width="8" height="8" rx="4" fill="#8C959F"/>
-<text x="928" y="235" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Deleted after masking (step 12)</text>
-<rect x="914" y="244.5" width="8" height="8" rx="4" fill="#8C959F"/>
-<text x="928" y="253" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Lifecycle rule removes leftovers</text>
+<text x="928" y="235" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Infected file: job rejected</text>
 <g filter="url(#shadow)"><rect x="1200" y="140" width="270" height="170" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
 <path d="M1200,148 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#0F6CBD"/>
 <circle cx="1220" cy="159" r="11" fill="#FFFFFF"/>
 <text x="1220" y="163.5" font-size="12" fill="#0F6CBD" font-weight="bold" text-anchor="middle" font-style="normal">4</text>
-<text x="1238" y="164" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Defender for Storage</text>
-<text x="1214" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Malware scan on upload</text>
-<rect x="1214" y="208.5" width="8" height="8" rx="4" fill="#8C959F"/>
-<text x="1228" y="217" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Infected file: job rejected</text>
-<rect x="1214" y="226.5" width="8" height="8" rx="4" fill="#8C959F"/>
-<text x="1228" y="235" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Clean file: job enqueued</text>
+<text x="1238" y="164" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Intake Function</text>
+<rect x="1408" y="150" width="52" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.22" stroke="#FFFFFF" stroke-opacity="0.7"/>
+<text x="1434" y="163" font-size="9.5" fill="#FFFFFF" font-weight="bold" text-anchor="middle" font-style="normal">IN REPO</text>
+<text x="1214" y="198" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Authoritative checks</text>
+<rect x="1214" y="208.5" width="8" height="8" rx="1.5" fill="#B7791F"/>
+<text x="1228" y="217" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">≤ 500 MB: from blob properties</text>
+<rect x="1214" y="226.5" width="8" height="8" rx="1.5" fill="#B7791F"/>
+<text x="1228" y="235" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">≤ 2,000 pages: counted inside file</text>
+<rect x="1214" y="244.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="1228" y="253" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Real type from the file's first bytes</text>
+<rect x="1214" y="262.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
+<text x="1228" y="271" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">Count: 500 pp 25 ms, 2,000 pp 99 ms</text>
 <g filter="url(#shadow)"><rect x="1500" y="140" width="270" height="170" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
 <path d="M1500,148 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#0F6CBD"/>
 <circle cx="1520" cy="159" r="11" fill="#FFFFFF"/>
@@ -100,7 +101,9 @@
 <path d="M220,228 L296,228" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
 <text x="258" y="220" font-size="10.5" fill="#57606A" font-weight="normal" text-anchor="middle" font-style="normal">POST /jobs</text>
 <path d="M300,278 L224,278" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
-<text x="258" y="296" font-size="10.5" fill="#57606A" font-weight="normal" text-anchor="middle" font-style="normal">202 + job ID</text>
+<text x="258" y="296" font-size="10.5" fill="#57606A" font-weight="normal" text-anchor="middle" font-style="normal">202 + URL</text>
+<path d="M220,326 L735,326 L735,314" fill="none" stroke="#57606A" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="470" y="339" font-size="10.5" fill="#57606A" font-weight="normal" text-anchor="middle" font-style="normal">PUT file with the SAS upload URL (bypasses API Management)</text>
 <path d="M570,225.0 L596,225.0" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
 <path d="M870,225.0 L896,225.0" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
 <path d="M1170,225.0 L1196,225.0" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
