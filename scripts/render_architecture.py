@@ -184,7 +184,7 @@ for c in range(4):
 # Row 2: processing worker -------------------------------------------------------------------
 R2C, R2, R2H = 345, 385, 190
 add(f'<rect x="285" y="{R2C}" width="1500" height="255" rx="10" fill="#F3EEFA" stroke="{PURPLE}" stroke-opacity="0.45" stroke-dasharray="6 4"/>')
-text(300, R2C + 24, "PROCESSING  ·  Redaction worker (Container Apps or Functions)  ·  fails closed: any error returns no output",
+text(300, R2C + 24, "PROCESSING  ·  Redaction worker (Azure Functions, Service Bus trigger)  ·  fails closed: any error returns no output",
      size=11.5, color=PURPLE, weight="bold")
 card(4, R2, R2H, 6, "Document Intelligence", TEAL, [
     ("sub", "prebuilt-read OCR"),

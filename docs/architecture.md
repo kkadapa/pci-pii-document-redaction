@@ -110,7 +110,11 @@ In this repo, `precheck()` in `languageservice.py` implements the Intake Functio
 
 ### Processing (asynchronous, inside the redaction worker)
 
-The worker runs on Azure Container Apps or Azure Functions and scales with queue depth. It **fails closed**: any error ends the job with no output.
+The worker is an Azure Function, triggered by each Service Bus message, and scales with queue depth. It **fails closed**: any error ends the job with no output.
+
+- **Hosting plan:** a 2,000-page text PDF took about 2 minutes end to end, and scanned documents will take longer. Choose a Functions plan whose execution timeout and memory fit your largest documents. Flex Consumption or Premium allow longer runs than the basic Consumption plan. Check the current limits for each plan before choosing.
+- **The file isn't loaded into the Function:** the worker passes Document Intelligence a short-lived read URL for the blob, so the Function only holds the extracted text (about 2.4 MB for 2,000 pages), not a file of up to 500 MB. `languageservice.py` doesn't do this yet; it uploads the file bytes.
+- **When to use Azure Container Apps instead:** if testing with real scanned documents shows jobs exceeding the Functions plan's time or memory limits, or if your organization standardizes on containers. The worker code doesn't change, only where it runs.
 
 | Step | Component | What it does | Limits and numbers |
 |------|-----------|--------------|--------------------|

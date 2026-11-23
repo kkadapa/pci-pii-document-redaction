@@ -50,8 +50,8 @@ Block mode is the safer choice when the business has no need for documents that 
 | 7 | **Event Grid topic** | Delivers the scan result to the Intake Function, with retries | |
 | 8 | **Function: Intake validation** (IN REPO: `precheck()`) | On a malicious result, rejects the job and deletes the blob. On a clean result, checks the real size from blob properties, the real file type from the first bytes, and the page count from inside the file. Then enqueues the job, or rejects it and deletes the blob | ≤ 500 MB and ≤ 2,000 pages. **Measured:** page count 24 to 26 ms for 500 pages, 99 ms for the 3.0 MB 2,000-page batch. Essential, because Document Intelligence doesn't reject files over 2,000 pages ([tested](../README.md#service-limit-evidence)) |
 | 9 | **Service Bus queue** | One message per job. Retries, then dead-letters | The worker scales on queue length |
-| 10 | **Container Apps: redaction worker** (IN REPO: `languageservice.py`) | Runs steps 10a to 10d and fails closed on any error | |
-| 10a | **Document Intelligence**, `prebuilt-read` | Extracts the text | S0: 15 analyze and 50 get-result requests per second, polling at most every 2 s. **Measured:** 2,000 pages in 87.5 s. **Tested:** files over 2,000 pages are silently truncated, so the worker fails closed if fewer pages come back than the file has |
+| 10 | **Function: redaction worker** (IN REPO: `languageservice.py`) | Triggered by the Service Bus message. Runs steps 10a to 10d and fails closed on any error | Use a Functions plan whose timeout and memory fit the largest documents, such as Flex Consumption or Premium. See [Why Functions for the worker](#why-functions-for-the-worker) |
+| 10a | **Document Intelligence**, `prebuilt-read` | Extracts the text. The worker passes a short-lived read URL for the blob, so the Function never loads the file. (`languageservice.py` still uploads the file bytes) | S0: 15 analyze and 50 get-result requests per second, polling at most every 2 s. **Measured:** 2,000 pages in 87.5 s. **Tested:** files over 2,000 pages are silently truncated, so the worker fails closed if fewer pages come back than the file has |
 | 10b | Chunker (code) | Splits the text at line breaks with 100 characters of overlap | ≤ 5,000 characters per chunk (Language limit 5,120). **Measured:** 2,000 pages became about 519 chunks |
 | 10c | **Azure AI Language**, PII detection | Finds sensitive values with API `2026-05-15-preview` and explicit categories, including `CVV` | 5 documents and 1 MB per request; S0 allows 300 requests per minute, S allows 1,000. **Measured:** about 104 requests in 26.5 s, 5 in parallel |
 | 10d | Rules, mask, validate (code) | Luhn-checked card numbers, labeled CVVs and expiry dates. In mask mode, masks everything found and fails if a card number or CVV survives. In block mode, returns `blocked` if card data is found | **Measured:** 0.11 s for 500 pages |
@@ -146,6 +146,21 @@ How it works:
 
 What you give up compared with a database: no queries across job fields beyond index tags, and no transactions across several jobs. Neither is needed for this workload.
 
+## Why Functions for the worker
+
+The worker could run on Azure Functions or Azure Container Apps. Functions is the default here because:
+
+- **Fewer services.** The design already uses Functions for job creation, intake checks, and job status. Running the worker as a Function means one compute service to secure, deploy, and monitor.
+- **Native Service Bus trigger.** Each job message starts one worker run, and the platform scales the number of runs with the queue.
+- **The measured jobs fit.** A 2,000-page text PDF took about 2 minutes end to end.
+
+What to check before relying on it:
+
+- **Execution timeout.** Scanned documents need full OCR and weren't measured. Choose a plan whose timeout covers your largest documents, with headroom. Flex Consumption or Premium allow longer runs than the basic Consumption plan; check the current limits for each.
+- **Memory.** Passing Document Intelligence a blob URL keeps the file out of the Function's memory. If that isn't possible on your network, the Function must hold files of up to 500 MB.
+
+Move the worker to Container Apps if real scanned documents exceed those limits, or if your organization standardizes on containers. Only the hosting changes; the code stays the same.
+
 ## API contract
 
 | Call | Request | Response |
@@ -163,7 +178,7 @@ No component uses keys. Key-based (local) authentication is turned off on Docume
 | API Management | Function apps | Function-level Entra ID authentication |
 | Create-job Function | Job store (write), quarantine container (issue a user-delegation SAS) | Storage Blob Data Contributor; Storage Blob Delegator |
 | Intake Function | Job store, quarantine container, Service Bus | Storage Blob Data Contributor; Azure Service Bus Data Sender |
-| Redaction worker | Job store, quarantine and results containers, Service Bus, Document Intelligence, Language | Storage Blob Data Contributor; Azure Service Bus Data Receiver; Cognitive Services User |
+| Redaction worker Function | Job store, quarantine and results containers (including issuing a read SAS for Document Intelligence), Service Bus, Document Intelligence, Language | Storage Blob Data Contributor; Storage Blob Delegator; Azure Service Bus Data Receiver; Cognitive Services User |
 | Job-status Function | Job store and results container (read) | Storage Blob Data Reader |
 
 Scope each role assignment to the containers a component needs, not the whole storage account.
@@ -171,7 +186,8 @@ Scope each role assignment to the containers a component needs, not the whole st
 Network:
 
 - **Private endpoints** for Blob Storage, Service Bus, Document Intelligence, Language, and Key Vault, with public network access turned off on each.
-- **VNet integration** for the Functions and the Container Apps environment, so they reach those private endpoints.
+- **VNet integration** for all Function apps, so they reach those private endpoints.
+- **Document Intelligence reading the blob:** with public network access off on the storage account, Document Intelligence needs an allowed network path to fetch the blob from its read URL. That has to be configured on the storage account, and it was not tested here. If it can't be allowed, the worker can download the file and send the bytes instead, which needs a Functions plan with enough memory for the largest file.
 - **Exception:** the client's SAS upload needs a reachable Blob endpoint. Either put the quarantine container in its own storage account that allows public access for SAS uploads only, or give clients a private network path. This is a design decision for your security team.
 
 ## Comparison with a gateway-only design

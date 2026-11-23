@@ -220,11 +220,12 @@ card(235, 740, 190, 200, "9", "Service Bus queue", [
     ("note", "Worker scales on queue length"),
 ], "service-bus", PURPLE)
 add(f'<rect x="450" y="712" width="1150" height="265" rx="10" fill="#FFFFFF" fill-opacity="0.55" stroke="{PURPLE}" stroke-opacity="0.6"/>')
-icon("container-app", 462, 720, 26)
-text(494, 738, "Container Apps: redaction worker (languageservice.py)  ·  fails closed: any error, no output", size=12.5, color=PURPLE, weight="bold")
+icon("function-apps", 462, 720, 26)
+text(494, 738, "Function: redaction worker (languageservice.py)  ·  Service Bus trigger  ·  fails closed: any error, no output", size=12.5, color=PURPLE, weight="bold")
 badge(450, 712, "10", PURPLE)
 card(470, 765, 265, 195, "10a", "Document Intelligence", [
     ("note", "prebuilt-read OCR"),
+    ("note", "Target: reads blob via URL (repo sends bytes)"),
     ("limit", "S0: 15 analyze/s, 50 get/s"),
     ("limit", "Poll ≥ 2 s apart"),
     ("measured", "2,000 pages: 87.5 s (44 ms/page)"),
@@ -237,7 +238,7 @@ card(750, 765, 265, 195, "10b", "Chunker", [
 card(1030, 765, 265, 195, "10c", "Azure AI Language: PII", [
     ("note", "API 2026-05-15-preview, explicit categories incl. CVV"),
     ("limit", "5 docs and 1 MB per request; S0: 300 req/min"),
-    ("measured", "2,000 pages: ~104 requests in 26.5 s"),
+    ("measured", "2,000 pp: ~104 requests, 26.5 s"),
 ], "language", TEAL, in_repo=True)
 card(1310, 765, 270, 195, "10d", "Rules, mask, validate", [
     ("note", "Luhn card numbers, labeled CVV, expiry"),
@@ -289,10 +290,10 @@ add(f'<rect x="30" y="{by}" width="1840" height="222" rx="10" fill="#FFFFFF" str
 text(46, by + 26, "CROSS-CUTTING CONTROLS  ·  every component above is in PCI DSS scope", size=11.5, color=MUTED, weight="bold")
 chips = [
     ("entra-app-registrations", "Microsoft Entra ID", "Issues callers' tokens; API Management validates them. Key auth is disabled on the AI services"),
-    ("managed-identities", "Managed identities", "API Management, Functions, and worker reach Storage, Service Bus, and AI services without keys"),
+    ("managed-identities", "Managed identities", "API Management and the Function apps reach Storage, Service Bus, and AI services without keys"),
     ("key-vault", "Key Vault", "Only for secrets that can't use an identity, such as webhook signing keys"),
     ("private-endpoints", "Private endpoints", "Storage, Service Bus, Document Intelligence, Language, Key Vault"),
-    ("virtual-networks", "Virtual network", "Functions and worker are VNet-integrated; public access is off on every backend"),
+    ("virtual-networks", "Virtual network", "All Function apps are VNet-integrated; public access is off on every backend"),
     ("application-insights", "Application Insights", "Request metadata, timings, and errors; never request bodies"),
     ("log-analytics", "Log Analytics", "Diagnostic logs from every resource; no document content or entity values"),
     ("defender-for-cloud", "Defender for Cloud", "Security posture and threat alerts across all resources"),
