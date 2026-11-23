@@ -1,0 +1,14 @@
+$ python scripts/test_service_limits.py lang-rate
+# Azure AI Language: burst of requests above the per-minute rate limit
+# Run at 2026-11-23 04:42:09 UTC
+
+Limit under test  : S0: 100 requests per second, 300 per minute (S tier: 1,000 / 1,000)
+Source            : learn.microsoft.com/azure/ai-services/language-service/concepts/data-limits
+Request           : 1,100 x POST :analyze-text (PII, 1 short document each), 40 in parallel
+Duration          : 1.9 s
+  HTTP 200        : 585 requests
+  HTTP 429        : 505 requests
+  connection error (SSLError): 10 requests
+429 body          : code=429, message=Requests to the AnalyzeText Operation under Microsoft Cognitive Language Service - 2026-05-15-preview have exceeded call rate limit of your current TextAnalytics S pricing tier. Please retry after 45 seconds. Please cont ...
+Retry-After       : 45
+Verdict           : LIMIT ENFORCED: requests over the rate were refused with HTTP 429

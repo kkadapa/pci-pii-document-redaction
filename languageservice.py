@@ -24,15 +24,17 @@ Usage:
 
 import json
 import os
+import random
 import re
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
 from dotenv import load_dotenv
 from azure.core.credentials import AzureKeyCredential
-from azure.core.exceptions import AzureError, HttpResponseError
+from azure.core.exceptions import AzureError, HttpResponseError, ServiceRequestError
 from azure.ai.documentintelligence import DocumentIntelligenceClient
 
 load_dotenv()
@@ -44,7 +46,8 @@ MAX_CHARS_PER_DOC = 5000             # Language sync limit is 5,120 text element
 CHUNK_OVERLAP = 100                  # so values cut at a chunk boundary are still seen whole
 MAX_DOCS_PER_REQUEST = 5             # Language sync limit for PII
 PARALLEL_REQUESTS = 5                # bounded concurrency for Language calls
-MAX_RETRIES = 5                      # for HTTP 429 / 5xx
+MAX_RETRIES = 8                      # Language: HTTP 429 / 5xx and dropped connections
+DOCINTEL_RETRIES = 10                # Document Intelligence SDK: upload and each status poll
 
 # --pci-mode block: any of these categories blocks the whole document
 PCI_BLOCK_CATEGORIES = {"CreditCardNumber", "CVV"}
@@ -143,18 +146,37 @@ def precheck(file_path):
 # --- Step 1: Document Intelligence -------------------------------------------------------
 
 def get_document_client():
+    # The SDK retries connection failures and 429/5xx on the upload and on every status
+    # poll, so a dropped connection mid-poll doesn't resubmit (and re-bill) the document.
     return DocumentIntelligenceClient(
         endpoint=_require_env("AZURE_DOCINTEL_ENDPOINT"),
         credential=AzureKeyCredential(_require_env("AZURE_DOCINTEL_KEY")),
+        retry_total=DOCINTEL_RETRIES,
+        retry_connect=DOCINTEL_RETRIES,
+        retry_read=DOCINTEL_RETRIES,
+        retry_backoff_factor=1.0,
+        retry_backoff_max=30,
     )
 
 
-def extract_text(doc_client, file_bytes):
-    """Run OCR and return (full text, page count)."""
-    result = doc_client.begin_analyze_document(
-        "prebuilt-read", body=file_bytes, content_type="application/octet-stream"
-    ).result()
-    return result.content or "", len(result.pages or [])
+def extract_text(doc_client, file_bytes, attempts=3):
+    """
+    Run OCR and return (full text, page count).
+
+    Retries only ServiceRequestError: the connection failed before the request was sent
+    (for example a dropped TLS handshake), so nothing was submitted or billed. Errors the
+    service returns (HttpResponseError) are not retried here.
+    """
+    for attempt in range(attempts):
+        try:
+            result = doc_client.begin_analyze_document(
+                "prebuilt-read", body=file_bytes, content_type="application/octet-stream"
+            ).result()
+            return result.content or "", len(result.pages or [])
+        except ServiceRequestError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(2 ** attempt)
 
 
 # --- Step 2: Language PII detection ------------------------------------------------------
@@ -178,8 +200,26 @@ def split_text(text, max_chars=MAX_CHARS_PER_DOC, overlap=CHUNK_OVERLAP):
     return chunks
 
 
+_thread_local = threading.local()
+
+
+def _session():
+    """One HTTP session per worker thread, so connections are reused between requests."""
+    if not hasattr(_thread_local, "session"):
+        _thread_local.session = requests.Session()
+    return _thread_local.session
+
+
+def _backoff(attempt):
+    """Exponential backoff (base capped at 30 s) with jitter of 0.5x to 1.5x."""
+    return min(2 ** attempt, 30) * (0.5 + random.random())
+
+
 def _post_language(endpoint, key, documents):
-    """POST one batch to the Language API, retrying 429 and 5xx. Raises on any failure."""
+    """
+    POST one batch to the Language API. Retries HTTP 429 and 5xx (honoring Retry-After) and
+    dropped connections, with backoff. Raises PipelineError on any other failure.
+    """
     body = {
         "kind": "PiiEntityRecognition",
         "analysisInput": {"documents": documents},
@@ -191,7 +231,7 @@ def _post_language(endpoint, key, documents):
     }
     for attempt in range(MAX_RETRIES):
         try:
-            response = requests.post(
+            response = _session().post(
                 f"{endpoint}/language/:analyze-text",
                 params={"api-version": LANGUAGE_API_VERSION},
                 headers={"Ocp-Apim-Subscription-Key": key},
@@ -201,7 +241,8 @@ def _post_language(endpoint, key, documents):
         except requests.RequestException as exc:
             if attempt == MAX_RETRIES - 1:
                 raise PipelineError(f"Language request failed: {type(exc).__name__}") from None
-            time.sleep(2 ** attempt)
+            _thread_local.__dict__.pop("session", None)  # start a fresh connection next time
+            time.sleep(_backoff(attempt))
             continue
 
         if response.status_code == 200:
@@ -211,8 +252,8 @@ def _post_language(endpoint, key, documents):
                 raise PipelineError(f"Language returned document errors: {codes}")
             return results
         if response.status_code == 429 or response.status_code >= 500:
-            wait = float(response.headers.get("Retry-After", 2 ** attempt))
-            time.sleep(wait)
+            retry_after = response.headers.get("Retry-After")
+            time.sleep(float(retry_after) if retry_after else _backoff(attempt))
             continue
         raise PipelineError(f"Language request failed with HTTP {response.status_code}")
 
@@ -339,6 +380,15 @@ def process_document(file_path, pci_mode="mask"):
     t0 = time.perf_counter()
     text, pages = extract_text(get_document_client(), file_bytes)
     timings["document_intelligence_s"] = round(time.perf_counter() - t0, 1)
+
+    # Document Intelligence silently analyzes only the first 2,000 pages of a longer file
+    # and still reports success (tested: docs/evidence). If it analyzed fewer pages than the
+    # file has, unread pages could hold card data, so fail closed.
+    if intake["pages_counted"] is not None and pages != intake["pages_counted"]:
+        raise PipelineError(
+            f"Document Intelligence analyzed {pages:,} of {intake['pages_counted']:,} pages; "
+            "refusing to return a partial result"
+        )
 
     if not text.strip():
         return {"status": "no_text", "source_file": os.path.basename(file_path), "pages": pages}

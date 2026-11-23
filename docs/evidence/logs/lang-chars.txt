@@ -1,0 +1,11 @@
+$ python scripts/test_service_limits.py lang-chars
+# Azure AI Language: document longer than 5,120 characters (synchronous)
+# Run at 2026-11-23 04:41:40 UTC
+
+Limit under test  : Max characters per document, synchronous = 5,120
+Source            : learn.microsoft.com/azure/ai-services/language-service/concepts/data-limits
+Request           : POST :analyze-text (PII)  documents: 'too-long' 6,000 chars, 'normal' 500 chars
+Response          : HTTP 200 OK
+Error 'too-long'  : code=InvalidArgument, innererror.code=InvalidDocument, message=A document within the request was too large to be processed. Document contains 6000 text elements. Limit document size to: 5120 text elements. For additional de ...
+Processed         : normal
+Verdict           : LIMIT ENFORCED: oversized document rejected, the other one still processed

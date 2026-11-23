@@ -141,8 +141,8 @@ for y, s, bold in [
     (318, "B. GET /jobs/{id}", True), (334, "poll with Retry-After", False),
     (388, "← 202 job ID + upload URL", False), (404, "← 202 running, 200 / 422", False),
     (540, "C. PUT file to Blob", True), (556, "with the upload URL", False), (571, "(SAS, write-only)", False),
-    (900, "D. Masked JSON back", True), (916, "~3 s for 1 page", False), (931, "39-54 s for 500 pages", False),
-    (946, "~2.5 min for 2,000 pages", False),
+    (900, "D. Masked JSON back", True), (916, "~3 s for 1 page", False), (931, "34-40 s for 500 pages", False),
+    (946, "~1.9 min for 2,000 pages", False),
 ]:
     text(cx + 12, y, s, size=12 if bold else 11.5, color=INK if bold else MUTED, weight="600" if bold else "normal")
 
@@ -227,23 +227,23 @@ card(470, 765, 265, 195, "10a", "Document Intelligence", [
     ("note", "prebuilt-read OCR"),
     ("limit", "S0: 15 analyze/s, 50 get/s"),
     ("limit", "Poll ≥ 2 s apart"),
-    ("measured", "2,000 pages: 108.8 s (54 ms/page)"),
+    ("measured", "2,000 pages: 87.5 s (44 ms/page)"),
 ], "document-intelligence", TEAL, in_repo=True)
 card(750, 765, 265, 195, "10b", "Chunker", [
     ("limit", "≤ 5,000 chars per chunk (API max 5,120)"),
     ("note", "100-character overlap"),
-    ("measured", "2,000 pages: 2.1M chars, 434 chunks"),
+    ("measured", "2,000 pages: 2.4M chars, ~519 chunks"),
 ], None, PURPLE, in_repo=True)
 card(1030, 765, 265, 195, "10c", "Azure AI Language: PII", [
     ("note", "API 2026-05-15-preview, explicit categories incl. CVV"),
     ("limit", "5 docs and 1 MB per request; S0: 300 req/min"),
-    ("measured", "2,000 pages: 87 requests in 36.7 s"),
+    ("measured", "2,000 pages: ~104 requests in 26.5 s"),
 ], "language", TEAL, in_repo=True)
 card(1310, 765, 270, 195, "10d", "Rules, mask, validate", [
     ("note", "Luhn card numbers, labeled CVV, expiry"),
     ("note", "Fail if a card number or CVV survives"),
     ("note", "Block mode: card data found, no text, 422"),
-    ("measured", "500 pages: 0.09 s"),
+    ("measured", "500 pages: 0.11 s"),
 ], None, PURPLE, in_repo=True)
 arrow([(425, 840), (446, 840)])
 arrow([(735, 862), (746, 862)])

@@ -1,0 +1,12 @@
+$ python scripts/test_service_limits.py di-pages
+# Document Intelligence: more than 2,000 pages in one analysis
+# Run at 2026-11-23 04:42:19 UTC
+
+Limit under test  : Max pages per analysis = 2,000 (S0, not adjustable)
+Source            : learn.microsoft.com/azure/ai-services/document-intelligence/service-limits
+Request           : POST prebuilt-read:analyze  body: PDF, 2,001 pages, 984 KB
+Response          : HTTP 202 Accepted  (after 2 connection attempts)
+Accepted          : analysis started; polling every 2 s
+Final status      : succeeded after 55 s
+Pages returned    : 2,000 of 2,001 sent
+Verdict           : LIMIT ENFORCED SILENTLY: only the first 2,000 pages were analyzed, with no error

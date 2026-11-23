@@ -1,0 +1,10 @@
+$ python scripts/test_service_limits.py lang-chars-async
+# Azure AI Language: asynchronous job over 125,000 characters in total
+# Run at 2026-11-23 04:41:51 UTC
+
+Limit under test  : Max 125,000 characters across all documents, asynchronous
+Source            : learn.microsoft.com/azure/ai-services/language-service/concepts/data-limits
+Request           : POST analyze-text/jobs (PII)  documents: 25 x 5,100 chars = 127,500 chars
+Response          : HTTP 413 Payload Too Large
+Error             : code=InvalidRequest, innererror.code=InvalidDocumentBatch, message=Request Payload sent is too large to be processed. Limit request size to: 125000
+Verdict           : LIMIT ENFORCED: whole request rejected, with HTTP 413 (Microsoft's data-limits page says 400)

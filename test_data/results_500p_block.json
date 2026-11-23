@@ -1,0 +1,15 @@
+{
+  "status": "blocked",
+  "reason": "Payment card data detected",
+  "source_file": "banking_statements_500p.pdf",
+  "pages": 500,
+  "pci_categories_found": [
+    "CVV",
+    "CreditCardNumber"
+  ],
+  "timings": {
+    "precheck_s": 0.062,
+    "document_intelligence_s": 28.5,
+    "language_s": 6.5
+  }
+}

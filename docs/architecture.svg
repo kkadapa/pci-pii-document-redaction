@@ -32,8 +32,8 @@
 <text x="42" y="420" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">D. Wait: poll with</text>
 <text x="42" y="436" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">    Retry-After, or webhook</text>
 <text x="42" y="700" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">E. Receive masked JSON</text>
-<text x="42" y="722" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">~2.5 min for 2,000 pages</text>
-<text x="42" y="738" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">39-54 s for 500 pages</text>
+<text x="42" y="722" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">~1.9 min for 2,000 pages</text>
+<text x="42" y="738" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">34-40 s for 500 pages</text>
 <text x="42" y="754" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">~3 s for 1 page</text>
 <text x="300" y="128" font-size="11.5" fill="#57606A" font-weight="bold" text-anchor="start" font-style="normal">INTAKE  ·  API call returns in seconds; the file goes straight to Blob Storage</text>
 <g filter="url(#shadow)"><rect x="300" y="140" width="270" height="170" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
@@ -126,7 +126,7 @@
 <rect x="1514" y="505.5" width="8" height="8" rx="4" fill="#8C959F"/>
 <text x="1528" y="514" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Large files: split with pages range</text>
 <rect x="1514" y="523.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
-<text x="1528" y="532" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">2,000 pages in 108.8 s (54 ms/page)</text>
+<text x="1528" y="532" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">2,000 pages in 87.5 s (44 ms/page)</text>
 <g filter="url(#shadow)"><rect x="1200" y="385" width="270" height="190" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
 <path d="M1200,393 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#6B3FA0"/>
 <circle cx="1220" cy="404" r="11" fill="#FFFFFF"/>
@@ -141,7 +141,7 @@
 <rect x="1214" y="487.5" width="8" height="8" rx="4" fill="#8C959F"/>
 <text x="1228" y="496" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">100-character overlap between chunks</text>
 <rect x="1214" y="505.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
-<text x="1228" y="514" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">2,000 pages: 2.1M chars → 434 chunks</text>
+<text x="1228" y="514" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">2,000 pages: 2.4M chars → ~519 chunks</text>
 <g filter="url(#shadow)"><rect x="900" y="385" width="270" height="190" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
 <path d="M900,393 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#00796B"/>
 <circle cx="920" cy="404" r="11" fill="#FFFFFF"/>
@@ -158,7 +158,7 @@
 <rect x="914" y="505.5" width="8" height="8" rx="4" fill="#8C959F"/>
 <text x="928" y="514" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">5 parallel requests, retry on 429</text>
 <rect x="914" y="523.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
-<text x="928" y="532" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">2,000 pages: 87 requests in 36.7 s</text>
+<text x="928" y="532" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">2,000 pages: ~104 requests in 26.5 s</text>
 <g filter="url(#shadow)"><rect x="600" y="385" width="270" height="190" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
 <path d="M600,393 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#6B3FA0"/>
 <circle cx="620" cy="404" r="11" fill="#FFFFFF"/>
@@ -172,7 +172,7 @@
 <rect x="614" y="471.5" width="8" height="8" rx="4" fill="#8C959F"/>
 <text x="628" y="480" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">CVV and expiry after their labels</text>
 <rect x="614" y="489.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
-<text x="628" y="498" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">0 extra hits: Language caught all 125</text>
+<text x="628" y="498" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">0 extra hits: Language caught all 102</text>
 <text x="628" y="514" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">CVVs and expiry dates</text>
 <g filter="url(#shadow)"><rect x="300" y="385" width="270" height="190" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
 <path d="M300,393 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#6B3FA0"/>
@@ -188,7 +188,7 @@
 <rect x="314" y="487.5" width="8" height="8" rx="4" fill="#8C959F"/>
 <text x="328" y="496" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Any failed request: no output</text>
 <rect x="314" y="505.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
-<text x="328" y="514" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">500 pp: rules + mask + check 0.09 s</text>
+<text x="328" y="514" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">500 pp: rules + mask + check 0.11 s</text>
 <path d="M1635,310 L1635,381" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
 <path d="M1500,480.0 L1474,480.0" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
 <path d="M1200,480.0 L1174,480.0" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>
@@ -238,25 +238,25 @@
 <g filter="url(#shadow)"><rect x="1200" y="655" width="585" height="180" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
 <text x="1216" y="679" font-size="13" fill="#1F2328" font-weight="bold" text-anchor="start" font-style="normal">Measured: synthetic bank statements (text PDFs)</text>
 <rect x="1216" y="689" width="10" height="10" rx="2" fill="#7FB8AE"/>
-<text x="1231" y="698" font-size="11" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">500 pages (861 KB)</text>
+<text x="1231" y="698" font-size="11" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">500 pages (752 KB)</text>
 <rect x="1366" y="689" width="10" height="10" rx="2" fill="#00796B"/>
-<text x="1381" y="698" font-size="11" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">2,000 pages (3.4 MB)</text>
+<text x="1381" y="698" font-size="11" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">2,000 pages (3.0 MB)</text>
 <text x="1216" y="727" font-size="11.5" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Document Intelligence</text>
-<rect x="1370" y="711" width="65.3" height="11" rx="2" fill="#7FB8AE"/>
-<text x="1441.2772073921972" y="720.5" font-size="11" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">28.9 s</text>
-<rect x="1370" y="725" width="245.7" height="11" rx="2" fill="#00796B"/>
-<text x="1621.7494866529773" y="734.5" font-size="11" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">108.8 s</text>
+<rect x="1370" y="711" width="78.7" height="11" rx="2" fill="#7FB8AE"/>
+<text x="1454.6945169712794" y="720.5" font-size="11" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">27.4 s</text>
+<rect x="1370" y="725" width="251.3" height="11" rx="2" fill="#00796B"/>
+<text x="1627.3054830287206" y="734.5" font-size="11" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">87.5 s</text>
 <text x="1216" y="761" font-size="11.5" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Language PII, 5 parallel</text>
-<rect x="1370" y="745" width="23.0" height="11" rx="2" fill="#7FB8AE"/>
-<text x="1399.0390143737166" y="754.5" font-size="11" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">10.2 s</text>
-<rect x="1370" y="759" width="82.9" height="11" rx="2" fill="#00796B"/>
-<text x="1458.8952772073922" y="768.5" font-size="11" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">36.7 s</text>
+<rect x="1370" y="745" width="19.8" height="11" rx="2" fill="#7FB8AE"/>
+<text x="1395.817232375979" y="754.5" font-size="11" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">6.9 s</text>
+<rect x="1370" y="759" width="76.1" height="11" rx="2" fill="#00796B"/>
+<text x="1452.1096605744126" y="768.5" font-size="11" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">26.5 s</text>
 <text x="1216" y="795" font-size="11.5" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">End to end</text>
-<rect x="1370" y="779" width="88.5" height="11" rx="2" fill="#7FB8AE"/>
-<text x="1464.542094455852" y="788.5" font-size="11" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">39.2 s</text>
+<rect x="1370" y="779" width="98.8" height="11" rx="2" fill="#7FB8AE"/>
+<text x="1474.798955613577" y="788.5" font-size="11" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">34.4 s</text>
 <rect x="1370" y="793" width="330.0" height="11" rx="2" fill="#00796B"/>
-<text x="1706.0" y="802.5" font-size="11" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">146.1 s</text>
-<text x="1216" y="823" font-size="11" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Nov 22 2026. 500-page Document Intelligence time ranged 28.9-44.7 s over 2 runs. Scans not measured.</text>
+<text x="1706.0" y="802.5" font-size="11" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">114.9 s</text>
+<text x="1216" y="823" font-size="11" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Nov 22 2026. 500-page end-to-end time ranged 34-40 s over 3 runs. Text PDFs; scans not measured.</text>
 <rect x="30" y="863" width="1755" height="95" rx="10" fill="#FFFFFF" stroke="#D0D7DE"/>
 <text x="46" y="889" font-size="11.5" fill="#57606A" font-weight="bold" text-anchor="start" font-style="normal">CROSS-CUTTING CONTROLS  ·  every component above is in PCI DSS scope</text>
 <rect x="46" y="905" width="313" height="32" rx="16" fill="#EEF2F6" stroke="#D0D7DE"/>

@@ -1,0 +1,28 @@
+$ python scripts/score_results.py test_data/results_500p.json test_data/ground_truth_500p.json
+# Pipeline results on the synthetic statement batches (mask mode, then block mode)
+# Run at 2026-11-23 04:46:14 UTC (scoring of the saved pipeline outputs)
+
+Run summary       : 500 pages, 598,991 characters, Document Intelligence 28.3 s, Language 11.6 s, 7,614 entities
+Field        Labels found   Leaked
+name                   26     0/26
+email                  26     0/26
+phone                  26     0/26
+ssn                    26     0/26
+card_number            26     0/26
+expiry                 26     0/26
+cvv                    26     0/26
+
+$ python scripts/score_results.py test_data/results_2000p.json test_data/ground_truth_2000p.json
+Run summary       : 2,000 pages, 2,437,253 characters, Document Intelligence 87.5 s, Language 26.5 s, 32,433 entities
+Field        Labels found   Leaked
+name                   76     1/76
+email                  76     0/76
+phone                  76     0/76
+ssn                    76     0/76
+card_number            76     0/76
+expiry                 76     0/76
+cvv                    76     0/76
+
+$ python languageservice.py test_data/banking_statements_500p.pdf --pci-mode block
+{"status": "blocked", "reason": "Payment card data detected", "pages": 500, "pci_categories_found": ["CVV", "CreditCardNumber"]}
+text returned     : False | entity positions returned: False

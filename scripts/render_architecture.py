@@ -130,8 +130,8 @@ client_steps = [
     (420, "D. Wait: poll with"),
     (436, "    Retry-After, or webhook"),
     (700, "E. Receive masked JSON"),
-    (722, "~2.5 min for 2,000 pages"),
-    (738, "39-54 s for 500 pages"),
+    (722, "~1.9 min for 2,000 pages"),
+    (738, "34-40 s for 500 pages"),
     (754, "~3 s for 1 page"),
 ]
 for y, s in client_steps:
@@ -191,32 +191,32 @@ card(4, R2, R2H, 6, "Document Intelligence", TEAL, [
     ("limit", "S0: 15 analyze/s, 50 get/s (adjustable)"),
     ("limit", "Poll results ≥ 2 s apart"),
     ("note", "Large files: split with pages range"),
-    ("measured", "2,000 pages in 108.8 s (54 ms/page)"),
+    ("measured", "2,000 pages in 87.5 s (44 ms/page)"),
 ], in_repo=True)
 card(3, R2, R2H, 7, "Chunker", PURPLE, [
     ("sub", "Split text at line breaks"),
     ("limit", "≤ 5,000 chars per chunk (API max 5,120)"),
     ("note", "100-character overlap between chunks"),
-    ("measured", "2,000 pages: 2.1M chars → 434 chunks"),
+    ("measured", "2,000 pages: 2.4M chars → ~519 chunks"),
 ], in_repo=True)
 card(2, R2, R2H, 8, "Azure AI Language PII", TEAL, [
     ("sub", "API 2026-05-15-preview, explicit categories incl. CVV, ExpirationDate"),
     ("limit", "5 docs per request, 1 MB per request"),
     ("limit", "S0: 100 req/s, 300 req/min"),
     ("note", "5 parallel requests, retry on 429"),
-    ("measured", "2,000 pages: 87 requests in 36.7 s"),
+    ("measured", "2,000 pages: ~104 requests in 26.5 s"),
 ], in_repo=True)
 card(1, R2, R2H, 9, "Rule layer", PURPLE, [
     ("sub", "Deterministic backstop"),
     ("note", "Card numbers: 13-19 digits + Luhn"),
     ("note", "CVV and expiry after their labels"),
-    ("measured", "0 extra hits: Language caught all 125 CVVs and expiry dates"),
+    ("measured", "0 extra hits: Language caught all 102 CVVs and expiry dates"),
 ], in_repo=True)
 card(0, R2, R2H, 10, "Mask + validate", PURPLE, [
     ("sub", "Mask the union of all spans with *"),
     ("note", "Block if a card number or CVV survives"),
     ("note", "Any failed request: no output"),
-    ("measured", "500 pp: rules + mask + check 0.09 s"),
+    ("measured", "500 pp: rules + mask + check 0.11 s"),
 ], in_repo=True)
 arrow([(1635, R1 + R1H), (1635, R2 - 4)])
 for c in range(4, 0, -1):
@@ -255,16 +255,16 @@ px, py, pw, ph = 1200, R3, 585, R3H
 add(f'<g filter="url(#shadow)"><rect x="{px}" y="{py}" width="{pw}" height="{ph}" rx="8" fill="#FFFFFF" stroke="{BORDER}"/></g>')
 text(px + 16, py + 24, "Measured: synthetic bank statements (text PDFs)", size=13, weight="bold")
 LIGHT, DARK = "#7FB8AE", TEAL
-for i, (c, label) in enumerate([(LIGHT, "500 pages (861 KB)"), (DARK, "2,000 pages (3.4 MB)")]):
+for i, (c, label) in enumerate([(LIGHT, "500 pages (752 KB)"), (DARK, "2,000 pages (3.0 MB)")]):
     lx2 = px + 16 + i * 150
     add(f'<rect x="{lx2}" y="{py + 34}" width="10" height="10" rx="2" fill="{c}"/>')
     text(lx2 + 15, py + 43, label, size=11, color=INK)
 rows = [
-    ("Document Intelligence", 28.9, 108.8),
-    ("Language PII, 5 parallel", 10.2, 36.7),
-    ("End to end", 39.2, 146.1),
+    ("Document Intelligence", 27.4, 87.5),
+    ("Language PII, 5 parallel", 6.9, 26.5),
+    ("End to end", 34.4, 114.9),
 ]
-scale = 330 / 146.1
+scale = 330 / 114.9
 for i, (label, small, large) in enumerate(rows):
     ry = py + 56 + i * 34
     text(px + 16, ry + 16, label, size=11.5, color=INK, weight="600" if label == "End to end" else "normal")
@@ -272,7 +272,7 @@ for i, (label, small, large) in enumerate(rows):
         by = ry + j * 14
         add(f'<rect x="{px + 170}" y="{by}" width="{secs * scale:.1f}" height="11" rx="2" fill="{color}"/>')
         text(px + 170 + secs * scale + 6, by + 9.5, f"{secs} s", size=11, color=INK, weight="600")
-text(px + 16, py + ph - 12, "Nov 22 2026. 500-page Document Intelligence time ranged 28.9-44.7 s over 2 runs. Scans not measured.",
+text(px + 16, py + ph - 12, "Nov 22 2026. 500-page end-to-end time ranged 34-40 s over 3 runs. Text PDFs; scans not measured.",
      size=11, color=MUTED, style="italic")
 
 # Cross-cutting controls ----------------------------------------------------------------------

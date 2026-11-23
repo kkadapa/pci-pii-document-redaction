@@ -38,8 +38,8 @@
 <text x="42" y="571" font-size="11.5" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">(SAS, write-only)</text>
 <text x="42" y="900" font-size="12" fill="#1F2328" font-weight="600" text-anchor="start" font-style="normal">D. Masked JSON back</text>
 <text x="42" y="916" font-size="11.5" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">~3 s for 1 page</text>
-<text x="42" y="931" font-size="11.5" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">39-54 s for 500 pages</text>
-<text x="42" y="946" font-size="11.5" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">~2.5 min for 2,000 pages</text>
+<text x="42" y="931" font-size="11.5" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">34-40 s for 500 pages</text>
+<text x="42" y="946" font-size="11.5" fill="#57606A" font-weight="normal" text-anchor="start" font-style="normal">~1.9 min for 2,000 pages</text>
 <rect x="215" y="110" width="1205" height="300" rx="10" fill="#EEF5FC" stroke="#0F6CBD" stroke-opacity="0.45" stroke-dasharray="6 4"/>
 <text x="229" y="130" font-size="11.5" fill="#0F6CBD" font-weight="bold" text-anchor="start" font-style="normal">REQUEST PATH  ·  synchronous</text>
 <g filter="url(#shadow)"><rect x="235" y="160" width="190" height="160" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
@@ -222,7 +222,7 @@
 <rect x="486" y="862.5" width="8" height="8" rx="1.5" fill="#B7791F"/>
 <text x="500" y="871" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">Poll ≥ 2 s apart</text>
 <rect x="486" y="881.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
-<text x="500" y="890" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">2,000 pages: 108.8 s (54 ms/page)</text>
+<text x="500" y="890" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">2,000 pages: 87.5 s (44 ms/page)</text>
 <circle cx="470" cy="765" r="16" fill="#00796B" stroke="#FFFFFF" stroke-width="2.5"/>
 <text x="470" y="769.5" font-size="11" fill="#FFFFFF" font-weight="bold" text-anchor="middle" font-style="normal">10a</text>
 <g filter="url(#shadow)"><rect x="750" y="765" width="265" height="195" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
@@ -236,7 +236,8 @@
 <rect x="766" y="859.5" width="8" height="8" rx="4" fill="#8C959F"/>
 <text x="780" y="868" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">100-character overlap</text>
 <rect x="766" y="878.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
-<text x="780" y="887" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">2,000 pages: 2.1M chars, 434 chunks</text>
+<text x="780" y="887" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">2,000 pages: 2.4M chars, ~519</text>
+<text x="780" y="903" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">chunks</text>
 <circle cx="750" cy="765" r="16" fill="#6B3FA0" stroke="#FFFFFF" stroke-width="2.5"/>
 <text x="750" y="769.5" font-size="11" fill="#FFFFFF" font-weight="bold" text-anchor="middle" font-style="normal">10b</text>
 <g filter="url(#shadow)"><rect x="1030" y="765" width="265" height="195" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
@@ -252,7 +253,8 @@
 <text x="1060" y="868" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">5 docs and 1 MB per request; S0:</text>
 <text x="1060" y="884" font-size="12" fill="#7A4E0B" font-weight="600" text-anchor="start" font-style="normal">300 req/min</text>
 <rect x="1046" y="894.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
-<text x="1060" y="903" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">2,000 pages: 87 requests in 36.7 s</text>
+<text x="1060" y="903" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">2,000 pages: ~104 requests in 26.5</text>
+<text x="1060" y="919" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">s</text>
 <circle cx="1030" cy="765" r="16" fill="#00796B" stroke="#FFFFFF" stroke-width="2.5"/>
 <text x="1030" y="769.5" font-size="11" fill="#FFFFFF" font-weight="bold" text-anchor="middle" font-style="normal">10c</text>
 <g filter="url(#shadow)"><rect x="1310" y="765" width="270" height="195" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
@@ -270,7 +272,7 @@
 <text x="1340" y="903" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Block mode: card data found, no</text>
 <text x="1340" y="919" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">text, 422</text>
 <rect x="1326" y="929.5" width="8" height="8" rx="1.5" fill="#1A7F37"/>
-<text x="1340" y="938" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">500 pages: 0.09 s</text>
+<text x="1340" y="938" font-size="12" fill="#116329" font-weight="600" text-anchor="start" font-style="normal">500 pages: 0.11 s</text>
 <circle cx="1310" cy="765" r="16" fill="#6B3FA0" stroke="#FFFFFF" stroke-width="2.5"/>
 <text x="1310" y="769.5" font-size="11" fill="#FFFFFF" font-weight="bold" text-anchor="middle" font-style="normal">10d</text>
 <path d="M425,840 L446,840" fill="none" stroke="#57606A" stroke-width="2" marker-end="url(#arrow)"/>

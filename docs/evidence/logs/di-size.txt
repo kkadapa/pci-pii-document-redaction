@@ -1,0 +1,11 @@
+$ python scripts/test_service_limits.py di-size
+# Document Intelligence: file larger than 500 MB
+# Run at 2026-11-23 04:45:24 UTC
+
+Limit under test  : Max document size = 500 MB (S0, not adjustable)
+Source            : learn.microsoft.com/azure/ai-services/document-intelligence/service-limits
+Request           : POST prebuilt-read:analyze  body: 501 MiB (525,336,576 bytes), streamed
+Sent              : 163,840 of 525,336,576 bytes; request Content-Length: 525336576, Transfer-Encoding: none
+Response          : HTTP 400 Bad Request  after 0 s
+Error             : code=InvalidRequest, innererror.code=InvalidContentLength, message=The input image is too large. Refer to documentation for the maximum file size.
+Verdict           : LIMIT ENFORCED: request rejected

@@ -1,0 +1,14 @@
+$ python scripts/test_service_limits.py di-rate
+# Document Intelligence: burst of analyze requests above 15 per second
+# Run at 2026-11-23 04:41:56 UTC
+
+Limit under test  : Analyze transactions per second = 15 (S0 default, adjustable)
+Source            : learn.microsoft.com/azure/ai-services/document-intelligence/service-limits
+Request           : 60 x POST prebuilt-read:analyze (1-page PDF), 30 in parallel
+Duration          : 1.1 s
+  HTTP 202        : 25 requests
+  HTTP 429        : 25 requests
+  connection error (SSLError): 10 requests
+429 body          : code=429, message=Requests to the DocumentModels_AnalyzeDocumentFromStream Operation under Azure AI Document Intelligence 2024-11-30 have exceeded call rate limit of your current FormRecognizer S0 pricing tier. Please retry after 1 second ...
+Retry-After       : 1
+Verdict           : LIMIT ENFORCED: requests over the rate were refused with HTTP 429

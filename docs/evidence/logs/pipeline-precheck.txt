@@ -1,0 +1,15 @@
+$ python scripts/test_service_limits.py pipeline-precheck
+# This pipeline: oversized files rejected before any Azure call
+# Run at 2026-11-23 04:41:41 UTC
+
+Limits applied    : 500 MB and 2,000 pages, the Document Intelligence S0 limits
+
+$ python languageservice.py statement_2001_pages.pdf
+{"status": "error", "error": "File has 2,001 pages; the limit is 2,000 pages"}
+exit code 1, no request sent to Document Intelligence or Language
+
+$ python languageservice.py statement_501_MiB.pdf
+{"status": "error", "error": "File is 525,336,576 bytes; the limit is 524,288,000 bytes (500 MB)"}
+exit code 1, no request sent to Document Intelligence or Language
+
+Verdict           : REJECTED BY PRE-CHECK: both files stopped before upload
