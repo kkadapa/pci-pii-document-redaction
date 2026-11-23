@@ -82,6 +82,11 @@ PDF / image upload
 6. Validate: if any Luhn-valid card number or labeled CVV remains, fail
         |
         v
+7. PCI policy (--pci-mode)
+   - mask (default): return the masked text
+   - block: if any card number or CVV was found, return "blocked" and no text
+        |
+        v
 JSON response
 ```
 
@@ -161,10 +166,11 @@ The `azure-ai-textanalytics` SDK (5.4.0, the latest release) supports Language A
 3. Run the pipeline:
 
    ```
-   python languageservice.py sample_pci_test.pdf
+   python languageservice.py sample_pci_test.pdf                    # mask card data (default)
+   python languageservice.py sample_pci_test.pdf --pci-mode block   # reject documents with card data
    ```
 
-   The exit code is 0 on success and 1 on a pipeline error.
+   The exit code is 0 when the pipeline completes, whether the result is masked or blocked, and 1 on a pipeline error. Which mode to use is a business decision: see [Mask or block](docs/technical-architecture.md#4-mask-or-block-a-business-decision).
 
 4. Optional: reproduce the tests. The test documents are already in `test_data/`:
 
@@ -215,6 +221,21 @@ The `azure-ai-textanalytics` SDK (5.4.0, the latest release) supports Language A
 | `language_api_version`, `language_model_versions` | Recorded for audit |
 | `file_type`, `size_bytes` | From the pre-check. The type is detected from the file's first bytes |
 | `timings` | Seconds spent in the pre-check, Document Intelligence, and Language |
+
+In block mode, a document containing card data returns no text and no entity positions. The API layer maps this to HTTP `422`:
+
+```json
+{
+  "status": "blocked",
+  "reason": "Payment card data detected",
+  "source_file": "sample_pci_test.pdf",
+  "pages": 1,
+  "pci_categories_found": ["CVV", "CreditCardNumber"],
+  "timings": {"precheck_s": 0.037, "document_intelligence_s": 2.5, "language_s": 0.3}
+}
+```
+
+This example shows the output format. Block mode has been verified offline only so far; see [Block mode](#block-mode).
 
 ## Service limits
 
@@ -369,6 +390,19 @@ All 10 cases behaved as expected, and timings were consistent across repeated ru
 - **Cost grows with page count and file size.** At 2,000 pages, the blank 244 KB PDF took 57 ms and the 3.4 MB statement took 99 ms. Even at the 2,000-page limit, the pre-check takes about a tenth of a second.
 - **Files at the limit go through end to end.** The 2,000-page statement passed the pre-check and then completed the full pipeline in 146.1 s, with nothing leaked. See [Processing time](#processing-time) and [Detection accuracy](#detection-accuracy).
 
+### Block mode
+
+`--pci-mode block` was tested offline, with the Document Intelligence and Language calls replaced by fixed responses. The pre-check, rule layer, masking, and blocking code ran for real:
+
+| Document | Mode | Result |
+|----------|------|--------|
+| Card number, expiry, and CVV | `block` | `blocked`, with `CVV` and `CreditCardNumber` found. No text and no entity positions returned |
+| Card number, expiry, and CVV | `mask` | `ok`, with card number, expiry, and CVV masked |
+| No sensitive data | `block` | `ok` |
+| No sensitive data | `mask` | `ok` |
+
+In this test the Language response was empty, so the rule layer alone triggered the block. That confirms the backstop works without the service. A live run against Azure was attempted, but both resources stopped accepting the configured credentials, as described in [Known gaps](#known-gaps). It is still to do.
+
 ### API version comparison
 
 `scripts/probe_pii_categories.py` sent `Card number: 4111 1111 1111 1111. Expiration: 04/28. CVV: 123.` to the Language REST API:
@@ -392,7 +426,8 @@ This is why the pipeline uses the preview API with an explicit category list.
 | Overlapping chunks can report an entity twice if the two chunks detect slightly different spans | Duplicate entries in `entities` | Masking is unaffected. Merge overlapping spans if the list needs to be exact |
 | Transient connection errors fail the job | Seen once in testing: a dropped TLS connection before the 2,000-page upload. The pipeline returned an error rather than partial output, and an immediate retry succeeded | Retry the whole job a limited number of times, for example through Service Bus redelivery, before reporting failure |
 | Synchronous command-line tool | Not suitable for large uploads behind a web request | Use the target-state architecture above |
-| Keys stored in `.env` | Key leakage | Use Microsoft Entra ID (managed identity) or Key Vault in production |
+| Keys stored in `.env` | Key leakage | Use Microsoft Entra ID (managed identity) and turn off key authentication on both AI services (`disableLocalAuth=true`) |
+| Block mode not yet run live | It has been verified offline only | Run `--pci-mode block` on the sample and test documents once the Azure credentials work again |
 | Tested only on English text PDFs | Accuracy on scans, handwriting, and other languages is unknown | Build a labeled test set from your own document layouts |
 
 ## Enterprise approach for financial institutions
@@ -422,6 +457,9 @@ Do not rely on a single detector for card data. Layer the controls in this table
 | Deterministic rules: Luhn card numbers, labeled CVV and expiry | Yes | Doesn't depend on a model or on preview features |
 | Validate the output before returning it | Yes | Blocks any response where a card number or CVV survived |
 | Fail closed on any error | Yes | Never returns partly masked text |
+| Option to block documents with card data | Yes (`--pci-mode block`) | Removes reliance on catching every card-related field |
+| Bind each job to its creator (`oid`) | No (design) | Without it, anyone with a valid token and a guessed job ID could read another caller's result |
+| Key authentication turned off on the AI services | No (design) | Leaves no key to leak |
 | Overlapping chunks | Yes | A value cut at a chunk boundary is still seen whole |
 | Mask regardless of confidence | Yes | Every detected span is masked. Use `confidence_score` to route documents to human review, not to decide whether to mask |
 | Never log content | Yes, in code | Log job IDs, page counts, category counts, timings, and versions only. Check that Azure diagnostic settings on both resources follow the same rule |

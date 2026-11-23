@@ -139,7 +139,7 @@ for y, s, bold in [
     (cy + 100, "Bank portal, back-office", False), (cy + 115, "app, or batch uploader", False),
     (252, "A. POST /jobs", True), (268, "file name, size, type", False), (283, "(no file content)", False),
     (318, "B. GET /jobs/{id}", True), (334, "poll with Retry-After", False),
-    (388, "← 202 job ID + upload URL", False), (404, "← 202 running / 200 JSON", False),
+    (388, "← 202 job ID + upload URL", False), (404, "← 202 running, 200 / 422", False),
     (540, "C. PUT file to Blob", True), (556, "with the upload URL", False), (571, "(SAS, write-only)", False),
     (900, "D. Masked JSON back", True), (916, "~3 s for 1 page", False), (931, "39-54 s for 500 pages", False),
     (946, "~2.5 min for 2,000 pages", False),
@@ -153,7 +153,7 @@ card(235, 160, 190, 160, "1", "Application Gateway + WAF", [
     ("note", "OWASP rules block common web attacks"),
 ], "application-gateway", BLUE)
 card(450, 140, 390, 262, "2", "API Management", [
-    ("note", "validate-jwt: Entra ID token, audience, scopes"),
+    ("note", "validate-azure-ad-token: Entra ID token, audience, scopes"),
     ("note", "rate-limit-by-key and quota-by-key per client"),
     ("limit", "Declared size ≤ 500 MB and allowed type: early reject only, the client could lie"),
     ("note", "Routes POST /jobs and GET /jobs/{id}"),
@@ -161,17 +161,18 @@ card(450, 140, 390, 262, "2", "API Management", [
     ("note", "Logs metadata only, never request bodies"),
 ], "api-management", BLUE, subtitle="Front door for every API call")
 card(870, 140, 250, 125, "3", "Function: Create job", [
-    ("note", "Writes job record: awaiting upload"),
-    ("note", "Issues SAS: write-only, 1 blob, short expiry"),
+    ("note", "Job record, caller's oid as owner"),
+    ("note", "SAS: write-only, 1 blob, short expiry"),
 ], "function-apps", BLUE)
 card(870, 277, 250, 125, "12", "Function: Job status", [
-    ("note", "202 + status while running"),
-    ("note", "200 + masked JSON from results"),
+    ("note", "Owner only (oid match), else 404"),
+    ("note", "202 running, 200 JSON, 422 blocked"),
 ], "function-apps", BLUE)
-card(1150, 190, 250, 150, "4", "Cosmos DB: job store", [
-    ("note", "Job status, timestamps, counts"),
+card(1150, 175, 250, 180, "4", "Blob Storage: job store", [
+    ("note", "One JSON blob per job: status, owner, timestamps"),
+    ("note", "ETag checks stop lost updates"),
     ("note", "No document content, ever"),
-], "cosmos-db", BLUE)
+], "storage-accounts", BLUE)
 arrow([(200, 245), (231, 245)])
 arrow([(425, 245), (446, 245)])
 arrow([(840, 200), (866, 200)])
@@ -239,8 +240,9 @@ card(1030, 765, 265, 195, "10c", "Azure AI Language: PII", [
     ("measured", "2,000 pages: 87 requests in 36.7 s"),
 ], "language", TEAL, in_repo=True)
 card(1310, 765, 270, 195, "10d", "Rules, mask, validate", [
-    ("note", "Luhn card numbers, labeled CVV and expiry"),
-    ("note", "Block if a card number or CVV survives"),
+    ("note", "Luhn card numbers, labeled CVV, expiry"),
+    ("note", "Fail if a card number or CVV survives"),
+    ("note", "Block mode: card data found, no text, 422"),
     ("measured", "500 pages: 0.09 s"),
 ], None, PURPLE, in_repo=True)
 arrow([(425, 840), (446, 840)])
@@ -269,6 +271,7 @@ rows = [
     ("Real file type", "Intake Function (8): first bytes of the file", "Authoritative", TEAL),
     ("Pages ≤ 2,000", "Intake Function (8): counted inside the file", "Authoritative", TEAL),
     ("Anything the checks missed", "Document Intelligence (10a)", "Backstop: rejects files over its limits", PURPLE),
+    ("Caller owns the job", "Job-status Function (12): oid in job record", "Authoritative: other callers get 404", BLUE),
 ]
 ry = py + 66
 for check, where, trust, color in rows:
@@ -276,7 +279,7 @@ for check, where, trust, color in rows:
     text(px + 26, ry, check, size=12.5, weight="bold")
     text(px + 26, ry + 16, where, size=12, color=INK)
     text(px + 26, ry + 31, trust, size=11.5, color=MUTED, style="italic")
-    ry += 58
+    ry += 52
 text(px + 16, py + ph - 28, "API Management can't count pages: the file never reaches it,", size=11.5, color=MUTED)
 text(px + 16, py + ph - 12, "and its content validation only inspects small bodies.", size=11.5, color=MUTED)
 
@@ -285,10 +288,10 @@ by = 1005
 add(f'<rect x="30" y="{by}" width="1840" height="222" rx="10" fill="#FFFFFF" stroke="{BORDER}"/>')
 text(46, by + 26, "CROSS-CUTTING CONTROLS  ·  every component above is in PCI DSS scope", size=11.5, color=MUTED, weight="bold")
 chips = [
-    ("entra-app-registrations", "Microsoft Entra ID", "App registration issues callers' OAuth tokens; API Management validates them"),
-    ("managed-identities", "Managed identities", "Functions and worker reach Storage, Service Bus, Cosmos DB, and AI services without keys"),
+    ("entra-app-registrations", "Microsoft Entra ID", "Issues callers' tokens; API Management validates them. Key auth is disabled on the AI services"),
+    ("managed-identities", "Managed identities", "API Management, Functions, and worker reach Storage, Service Bus, and AI services without keys"),
     ("key-vault", "Key Vault", "Only for secrets that can't use an identity, such as webhook signing keys"),
-    ("private-endpoints", "Private endpoints", "Storage, Service Bus, Cosmos DB, Document Intelligence, Language, Key Vault"),
+    ("private-endpoints", "Private endpoints", "Storage, Service Bus, Document Intelligence, Language, Key Vault"),
     ("virtual-networks", "Virtual network", "Functions and worker are VNet-integrated; public access is off on every backend"),
     ("application-insights", "Application Insights", "Request metadata, timings, and errors; never request bodies"),
     ("log-analytics", "Log Analytics", "Diagnostic logs from every resource; no document content or entity values"),

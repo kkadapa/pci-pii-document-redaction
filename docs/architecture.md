@@ -38,7 +38,7 @@ sequenceDiagram
     participant W as Redaction worker
     participant D as Document Intelligence
     participant L as Azure AI Language
-    participant R as Result store
+    participant R as Blob Storage (results)
 
     U->>A: POST /jobs (metadata only: name, declared size, type)
     A->>A: Validate token, rate limit, declared size ≤ 500 MB and type
@@ -117,15 +117,15 @@ The worker runs on Azure Container Apps or Azure Functions and scales with queue
 | 7 | **Chunker** | Splits the text at line breaks so the Language service can accept it | **Limits:** the Language sync API takes at most 5,120 characters per document, so chunks are capped at 5,000. Consecutive chunks overlap by 100 characters so a value cut at a boundary is still seen whole. **Measured:** 500 pages: 528,527 characters became 109 chunks. 2,000 pages: 2,116,719 characters became about 434 chunks |
 | 8 | **Azure AI Language, PII detection** | Finds sensitive values. Uses API `2026-05-15-preview` with an explicit category list that includes `CreditCardNumber`, `CVV`, `ExpirationDate`, bank and tax IDs, and personal data | **Limits:** 5 documents and 1 MB per request. S0 allows 100 requests per second and 300 per minute. **This design:** 5 chunks per request, 5 requests in parallel, retry on `429` honoring `Retry-After`. **Measured:** 500 pages: 22 requests in 9.2 to 10.2 s, against 40.0 s one at a time. 2,000 pages: 87 requests in 36.7 s, about 142 per minute, under the 300-per-minute S0 limit |
 | 9 | **Rule layer** | Deterministic backstop that doesn't depend on a model: card numbers (13 to 19 digits that pass the Luhn check), and CVVs and expiry dates that follow their labels | **Measured:** 0 extra hits on the test set, because the Language service caught all 125 planted CVVs and expiry dates across both statements. The rules guard against layouts the service handles less well |
-| 10 | **Mask + validate** | Masks the union of every span from steps 8 and 9 with `*`, then re-checks the masked text | Blocks the job if any card number or labeled CVV survives. **Measured:** steps 9 and 10 together take 0.09 s for 500 pages |
+| 10 | **Mask + validate** | Masks the union of every span from steps 8 and 9 with `*`, then re-checks the masked text. In block mode, a document with card data returns `blocked` and no text instead | Blocks the job if any card number or labeled CVV survives. **Measured:** steps 9 and 10 together take 0.09 s for 500 pages |
 
 ### Delivery
 
 | Step | Component | What it does | Limits and numbers |
 |------|-----------|--------------|--------------------|
-| 11 | **Result store** | Stores the masked JSON: masked text, entity categories, positions, confidence, and the API and model versions used | Never stores raw values |
+| 11 | **Blob Storage: results** | Stores the masked JSON (or the blocked verdict): masked text, entity categories, positions, confidence, and the API and model versions used | Never stores raw values |
 | 12 | **Cleanup** | Deletes the raw file and the extracted text once the result is written | Logs contain only job IDs, counts, timings, and versions |
-| 13 | **Results API** (through API Management) | `GET /jobs/{id}` returns `202` while the job runs and `200` with the masked JSON when it's done. Alternatively, push a webhook through Event Grid | **Measured end to end:** about 3 s for a 1-page form, 39 to 54 s for 500 pages, and 146 s (about 2.5 minutes) for 2,000 pages |
+| 13 | **Results API** (through API Management) | `GET /jobs/{id}` answers only the caller who created the job, and `404` to anyone else. It returns `202` while the job runs, `200` with the masked JSON when it's done, and `422` if the document was blocked. Alternatively, push a webhook through Event Grid | **Measured end to end:** about 3 s for a 1-page form, 39 to 54 s for 500 pages, and 146 s (about 2.5 minutes) for 2,000 pages |
 
 ### Cross-cutting controls
 
@@ -167,3 +167,5 @@ Document Intelligence takes about three quarters of the time at both sizes once 
 | Language returns an error for any chunk | Step 8 | Job fails. A document is never returned with some chunks unmasked |
 | A card number or CVV survives masking | Step 10 | Job fails and an alert is raised. Treat it as a defect in the detectors |
 | No text found (for example, a blank scan) | Step 6 | Returns `status: no_text` |
+| Card data found in block mode | Step 10 | Returns `status: blocked` (HTTP `422`) with no text |
+| A caller asks for someone else's job | Step 13 | `404`, the same as for a job that doesn't exist |

@@ -227,11 +227,12 @@ R3, R3H = 655, 180
 section_label(300, R3 - 12, "DELIVERY")
 card(0, R3, R3H, 13, "Results API (via APIM)", BLUE, [
     ("sub", "GET /jobs/{id}"),
+    ("note", "Job owner only (oid), else 404"),
     ("note", "202 while running"),
-    ("note", "200 + masked JSON when done"),
+    ("note", "200 masked JSON, or 422 if blocked"),
     ("note", "Or push via webhook (Event Grid)"),
 ])
-card(1, R3, R3H, 11, "Result store", GREEN, [
+card(1, R3, R3H, 11, "Blob Storage: results", GREEN, [
     ("sub", "Masked JSON only"),
     ("note", "Entity metadata, no raw values"),
     ("note", "Audit: API and model versions"),

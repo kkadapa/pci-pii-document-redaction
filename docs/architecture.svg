@@ -202,16 +202,18 @@
 <text x="338" y="679" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Results API (via APIM)</text>
 <text x="314" y="713" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">GET /jobs/{id}</text>
 <rect x="314" y="723.5" width="8" height="8" rx="4" fill="#8C959F"/>
-<text x="328" y="732" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">202 while running</text>
+<text x="328" y="732" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Job owner only (oid), else 404</text>
 <rect x="314" y="741.5" width="8" height="8" rx="4" fill="#8C959F"/>
-<text x="328" y="750" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">200 + masked JSON when done</text>
+<text x="328" y="750" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">202 while running</text>
 <rect x="314" y="759.5" width="8" height="8" rx="4" fill="#8C959F"/>
-<text x="328" y="768" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Or push via webhook (Event Grid)</text>
+<text x="328" y="768" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">200 masked JSON, or 422 if blocked</text>
+<rect x="314" y="777.5" width="8" height="8" rx="4" fill="#8C959F"/>
+<text x="328" y="786" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Or push via webhook (Event Grid)</text>
 <g filter="url(#shadow)"><rect x="600" y="655" width="270" height="180" rx="8" fill="#FFFFFF" stroke="#D0D7DE"/></g>
 <path d="M600,663 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v30 h-270 z" fill="#1A7F37"/>
 <circle cx="620" cy="674" r="11" fill="#FFFFFF"/>
 <text x="620" y="678.5" font-size="12" fill="#1A7F37" font-weight="bold" text-anchor="middle" font-style="normal">11</text>
-<text x="638" y="679" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Result store</text>
+<text x="638" y="679" font-size="14" fill="#FFFFFF" font-weight="bold" text-anchor="start" font-style="normal">Blob Storage: results</text>
 <text x="614" y="713" font-size="12" fill="#57606A" font-weight="normal" text-anchor="start" font-style="italic">Masked JSON only</text>
 <rect x="614" y="723.5" width="8" height="8" rx="4" fill="#8C959F"/>
 <text x="628" y="732" font-size="12" fill="#1F2328" font-weight="normal" text-anchor="start" font-style="normal">Entity metadata, no raw values</text>

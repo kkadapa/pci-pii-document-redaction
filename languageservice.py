@@ -46,6 +46,9 @@ MAX_DOCS_PER_REQUEST = 5             # Language sync limit for PII
 PARALLEL_REQUESTS = 5                # bounded concurrency for Language calls
 MAX_RETRIES = 5                      # for HTTP 429 / 5xx
 
+# --pci-mode block: any of these categories blocks the whole document
+PCI_BLOCK_CATEGORIES = {"CreditCardNumber", "CVV"}
+
 # --- Language API configuration -------------------------------------------------------
 # Preview version is required for the CVV and ExpirationDate categories.
 LANGUAGE_API_VERSION = "2026-05-15-preview"
@@ -314,8 +317,17 @@ def validate_masked(masked_text):
 
 # --- Pipeline ----------------------------------------------------------------------------
 
-def process_document(file_path):
-    """Run the full pipeline on a local file and return a JSON-serializable dict."""
+def process_document(file_path, pci_mode="mask"):
+    """
+    Run the full pipeline on a local file and return a JSON-serializable dict.
+
+    pci_mode:
+      "mask"  - mask every detected value and return the masked text (default).
+      "block" - if any payment card data is found, return status "blocked" with no text
+                at all. The API layer maps this to HTTP 422.
+    """
+    if pci_mode not in ("mask", "block"):
+        raise PipelineError(f"Unknown pci_mode: {pci_mode}")
     timings = {}
     t0 = time.perf_counter()
     intake = precheck(file_path)
@@ -343,6 +355,18 @@ def process_document(file_path):
     for e in entities:
         counts[e["category"]] = counts.get(e["category"], 0) + 1
 
+    pci_found = sorted(c for c in counts if c in PCI_BLOCK_CATEGORIES)
+    if pci_mode == "block" and pci_found:
+        # No text and no entity positions: nothing about the document's content leaves.
+        return {
+            "status": "blocked",
+            "reason": "Payment card data detected",
+            "source_file": os.path.basename(file_path),
+            "pages": pages,
+            "pci_categories_found": pci_found,
+            "timings": timings,
+        }
+
     return {
         "status": "ok",
         "source_file": os.path.basename(file_path),
@@ -363,11 +387,14 @@ def process_document(file_path):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python languageservice.py <document path>", file=sys.stderr)
-        sys.exit(2)
+    import argparse
+    parser = argparse.ArgumentParser(description="Detect and mask PCI/PII in a document")
+    parser.add_argument("document", help="path to the document")
+    parser.add_argument("--pci-mode", choices=["mask", "block"], default="mask",
+                        help="mask card data (default), or block the whole document if any is found")
+    args = parser.parse_args()
     try:
-        output = process_document(sys.argv[1])
+        output = process_document(args.document, pci_mode=args.pci_mode)
     except PipelineError as exc:
         print(json.dumps({"status": "error", "error": str(exc)}, indent=2))
         sys.exit(1)
