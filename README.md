@@ -13,6 +13,7 @@ The response contains only masked text and entity metadata (category, position, 
 
 ## Contents
 
+- [Team walkthrough deck](docs/presentation/): 32 slides (PPTX and PDF) covering the whole project, with speaker notes
 - [Target-state architecture](#target-state-architecture): logical flow and technical implementation
 - [How the pipeline works](#how-the-pipeline-works)
 - [Project files](#project-files)
@@ -142,6 +143,8 @@ The `azure-ai-textanalytics` SDK (5.4.0, the latest release) supports Language A
 | `scripts/render_technical_architecture.py` | Generates `docs/technical-architecture.svg` (technical implementation, with Azure icons) |
 | `docs/architecture.md` | Logical flow, step by step |
 | `docs/technical-architecture.md` | Technical implementation: services, API Management policies, API contract, identities |
+| `scripts/build_presentation.py` | Generates the team walkthrough deck in `docs/presentation/` (PPTX, plus PDF if LibreOffice is installed) |
+| `docs/presentation/` | Team walkthrough deck: the whole project in 32 slides, with speaker notes |
 | `docs/icons/azure/` | Official Azure architecture icons used in the technical diagram, with Microsoft's terms of use |
 | `sample_pci_test.pdf` | One-page test form with public test card numbers and sample CVVs. Not real accounts |
 | `requirements.txt` | Pinned dependencies |

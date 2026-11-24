@@ -209,7 +209,7 @@ Where this design differs, and why:
 | Topic | Article | This design | Reason |
 |-------|---------|-------------|--------|
 | How the file arrives | Base64 in the JSON body, through API Management | Direct upload to Blob Storage with a SAS URL | Files up to 500 MB and 2,000 pages exceed what a gateway should carry. The article leaves large documents to a follow-up |
-| Where processing runs | Inside API Management policies (`send-request`) | A queue-driven worker | Chunking a 2,000-page document into 87 Language requests with retries is long-running work, not a gateway task |
+| Where processing runs | Inside API Management policies (`send-request`) | A queue-driven worker | Chunking a 2,000-page document into about 104 Language requests with retries is long-running work, not a gateway task |
 | Job state | API Management cache, 24 hours | JSON blob per job | A cache can evict entries. Job ownership and status should be durable |
 | Malware and file checks | Not covered | Defender for Storage, then the Intake Function | Uploaded files are untrusted input |
 | Card fields beyond the number | Blocks on `CreditCardNumber` because the expiry date wasn't flagged | Requests `CVV` and `ExpirationDate` (preview) and adds a rule layer, plus block mode | Supports workflows that need masked documents, while still offering blocking |
